@@ -2,10 +2,10 @@
 # STDlib
 from abc import ABC, abstractmethod
 from pathlib import Path
-import logging, re
+import logging, re, json
 
 # My own modules
-from mytyping import * # For type checking tools
+#from .mytyping import * # For type checking tools
 from errors import sheetError
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
@@ -25,8 +25,15 @@ def json2printdict(jsondata: str | dict[str,Any] ) -> dict[str,Any]:
         else: rv[key] = jsondata[key]
     return rv
 
+def list2printvalues( mylist: Collection[dict] )-> str:
+    "Prettyprints the values from a list of dictionaries."
+    out = []
+    for valuedict in mylist:
+        out +=  valuedict.values()
+    return "\n".join(out)
+
 # These should go to tools (and probably replaced with better tools by someone else)
-def unique(s: Sequence) ->tuple :return tuple(dict.fromkeys(s)) 
+def unique(s: Sequence) ->tuple[str] :return tuple(dict.fromkeys(s)) 
     
 def sanitize_filename(text:str) -> str:
     return text
@@ -38,10 +45,11 @@ class Spreadsheet(ABC):
         self.fp = Path(filename)
         self.file = None
         self._opened = False
-        pass
+        self._fields = tuple()
+        self._currentfields = set()
 
     @property
-    def filename(self:Self) -> bool: return self.fp
+    def filename(self:Self) -> Path: return self.fp
 
     @property
     def is_open(self:Self) -> bool: return self._opened
@@ -55,6 +63,14 @@ class Spreadsheet(ABC):
     def is_empty(self:Self) -> bool:
         if not self.exists: return True
         return self.fp.is_file() and ( self.fp.stat().st_size == 0 )
+
+    @property
+    def fields(self:Self)-> tuple[str,...]: return self._fields
+
+    @fields.setter
+    def fields(self:Self, val) -> None:
+        self._fields = tuple(unique(val))
+        self._currentfields = set(self._fields)
 
     @abstractmethod        
     def open(self:Self, fieldnames: Sequence[str] = []) -> None:
@@ -78,17 +94,6 @@ class WriteOnlySpreadsheet(Spreadsheet):
     def __init__(self:Self, filename: str|Path) -> None:
         super().__init__(filename)
         self._saved = False
-        self._fields = [] # Unique column names
-        self._currentfields = set()
-
-    @property
-    def fields(self:Self)-> list[str]: return self._fields
-
-    @fields.setter
-    def fields(self:Self, val) -> None:
-        self._fields = list(unique(val))
-        self._currentfields = set(self._fields)
-
     @property
     def is_saved(self:Self) -> bool: return self._saved
 
@@ -137,8 +142,3 @@ class ReadOnlySpreadsheet(Spreadsheet):
     def next(self:Self) -> tuple[str,...]: 
         return tuple()
 
-    @property
-    @abstractmethod        
-    def fields(self:Self) -> tuple[str]:
-        assert False, "Abstract fieldnames called."
-        return tuple()

@@ -6,7 +6,7 @@ import json as jsonmodule
 # My own modules
 from errors import sheetError
 import base
-from mytyping import * # For type checking tools
+#from .mytyping import * # For type checking tools
 
 SUFFIXES = [".csv", "csv"]
 class default:
@@ -84,7 +84,7 @@ class WriteCSV(base.WriteOnlySpreadsheet):
                     newname = self.fp.with_stem(str(oldname) +"_no_"+ "_".join(diff) )
                     self.move(newname, overwrite = True)
                 self.close()
-                self.fields = self.fields + list(diff)
+                self.fields = self.fields + tuple(diff)
                 self.open(fieldnames = self.fields) # Reopen as a new file
                 # Force header writing
                 self.writeheader()
@@ -145,6 +145,7 @@ if __name__ == '__main__':
     print("fields = ", t.fields)
     t.add_line_from_dict({"col_foo":"testA", "col_bar":"testB"})
     t.add_line_from_dict({"col_foo":"testB", "col_bar":"testB", "col_baz":"testB"})
+    t.add_line_from_dict({"col_foo":"testB",  "col_baz":"testB"})
     t.save()
 #    t = ReadCSV("test.csv")
 #    t.open()
