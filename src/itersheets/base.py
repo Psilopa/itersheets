@@ -11,7 +11,8 @@ from errors import sheetError
 log = logging.getLogger() # Set from main script if fancy logging is required.
 
 class new_column_action:
-    NEWFILE = "newfile"
+    NEWFILE = "newfile" # Only supported for CSV at the moment
+    INSERT = "insert" # Only supported for XLS at the moment
 
 def json2printdict(jsondata: str | dict[str,Any] ) -> dict[str,Any]:
     "Converts a string with JSON data or a corresponding dictionary with prettyprinted content."
@@ -34,11 +35,6 @@ def list2printvalues( mylist: Collection[dict] )-> str:
 
 # These should go to tools (and probably replaced with better tools by someone else)
 def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 
-    
-def sanitize_filename(text:str) -> str:
-    return text
-    dirty = "".join(["\\[/\\?%*:|\"<>0x7F0x00-0x1F]", chr(0x1F) * 15])
-    return re.sub(text,"-",dirty) # Replace all chars in dirty with -.
 
 class Spreadsheet(ABC):
     def __init__(self:Self, filename: str|Path) : 
@@ -101,11 +97,10 @@ class WriteOnlySpreadsheet(Spreadsheet):
         self._fields = tuple(unique(val))
         self._currentfields = set(self._fields)
 
-    # Override parent class methods
+    # Override parent class methods in child classes
     def close(self:Self, save:bool=True) -> None:
         if save: self.save()
-        else:
-            if not self._saved: log.warning(f"Closing file {self.filename} without saving first.")
+        if not self._saved: log.warning(f"Closing file {self.filename} without saving first.")
         super().close()
 
     @abstractmethod        
@@ -114,21 +109,21 @@ class WriteOnlySpreadsheet(Spreadsheet):
     @abstractmethod        
     def addrow(self:Self,
                datarowdict: dict[str,object],
-               on_new_field:str = new_column_action.NEWFILE
+               on_new_field:str 
                ) -> None:
         self._saved = False
 
    
     def add_line_from_dict(self:Self,
                            datarowdict: dict[str,object],
-                           on_new_key:str = new_column_action.NEWFILE) -> None:
+                           on_new_key:str ) -> None:
         """Write a row based on a dictionary of column_header: value items.
 
         If the column_header is not included in the existing file structure, raise a ValueError."""
         self.addrow( json2printdict(datarowdict), on_new_key )
         
     def add_line_from_json(self:Self, datarowdict: dict[str,object],
-                           on_new_key:str = new_column_action.NEWFILE ) -> None:
+                           on_new_key:str  ) -> None:
         self.addrow( json2printdict(datarowdict), on_new_key )
 
     def move(self:Self, newpath, overwrite=False):
@@ -145,4 +140,8 @@ class ReadOnlySpreadsheet(Spreadsheet):
     @abstractmethod        
     def next(self:Self) -> Iterable[str]: 
         return iter([])
+
+    @abstractmethod        
+    def open(self:Self) -> None:
+        self._opened = True
 

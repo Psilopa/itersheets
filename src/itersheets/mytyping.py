@@ -1,5 +1,5 @@
 #from collections.abc import Callable, Collection, Sequence, Generator
-from collections.abc import Sequence, Collection
+from collections.abc import Sequence, Collection, Iterator
 #Examples:
 #   Generator[SampleImageBase,None,None]
 from typing import Self, Any #Hashable, TextIO, BinaryIO

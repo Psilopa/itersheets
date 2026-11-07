@@ -1,11 +1,10 @@
 # STDlib
 import logging, csv, re
 from pathlib import Path
-import json as jsonmodule
 
 # My own modules
-from errors import sheetError
-from base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
+from .errors import sheetError
+from .base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
 #from .mytyping import * # For type checking tools
 
 SUFFIXES = [".csv", "csv"]
@@ -18,13 +17,18 @@ class default:
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
 # These should go to tools (and probably replaced with better tools by someone else)
+    
+def sanitize_filename(text:str) -> str:
+    return text
+    dirty = "".join(["\\[/\\?%*:|\"<>0x7F0x00-0x1F]", chr(0x1F) * 15])
+    return re.sub(text,"-",dirty) # Replace all chars in dirty with -.
 
 class WriteCSV(WriteOnlySpreadsheet): 
     # TODO: Convert to use the DictWriter class (needs data-pre-work to handle duplicate 'keys')
     """ """
     def __init__(self:Self, filename: str|Path): 
         super().__init__(filename)
-        if self.fp.suffix not in SUFFIXES: 
+        if self.fp.suffix.lower() not in SUFFIXES: 
             raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def _read_header(self:Self) -> tuple[str,...]:
@@ -82,9 +86,12 @@ class WriteCSV(WriteOnlySpreadsheet):
                 if not self.is_empty: # Not an empty file, need to create a backup
                     oldname = self.fp.stem
                     newname = self.fp.with_stem(str(oldname) +"_no_"+ "_".join(diff) )
+                    newname = sanitize_filename(newname)
+                    log.warning(f"Moving old file to {newname}.")
                     self.move(newname, overwrite = True)
                 self.close()
                 self.fields = self.fields + tuple(diff)
+                log.warning(f"Entering new data to {self.filename}.")
                 self.open(fieldnames = self.fields) # Reopen as a new file
                 # Force header writing
                 self.writeheader()
