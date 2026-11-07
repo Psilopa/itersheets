@@ -11,8 +11,8 @@ version = 'v0.1'
 #dynamic = ['version']
 authors = [ {name = "Jere Kahanpää"} ]
 readme = "README.md"
-license = "MIT licence"
-license-files = ["LICEN[CS]E*"]
+license = "MIT"
+license-files = ["LICENSE.txt"]
 requires-python = ">= 3.13" #
 # These should also be listed in requirements.txt !
 dependencies = [   

@@ -1,4 +1,4 @@
-# DEPENDS ON PYTHON 3.14 (path.copyt)
+# DEPENDS ON PYTHON 3.14? 
 # STDlib
 from abc import ABC, abstractmethod
 from pathlib import Path
