@@ -5,7 +5,7 @@ import json as jsonmodule
 
 # My own modules
 from errors import sheetError
-import base
+from base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
 #from .mytyping import * # For type checking tools
 
 SUFFIXES = [".csv", "csv"]
@@ -19,18 +19,15 @@ class default:
 log = logging.getLogger() # Set from main script if fancy logging is required.
 # These should go to tools (and probably replaced with better tools by someone else)
 
-class WriteCSV(base.WriteOnlySpreadsheet): 
+class WriteCSV(WriteOnlySpreadsheet): 
     # TODO: Convert to use the DictWriter class (needs data-pre-work to handle duplicate 'keys')
     """ """
-    def __init__(self:Self,
-                 filename: str|Path,
-                 dialect:csv.Dialect = default.DIALECT) -> None: 
+    def __init__(self:Self, filename: str|Path): 
         super().__init__(filename)
-        self.dialect = dialect
         if self.fp.suffix not in SUFFIXES: 
             raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
-    def _read_header(self:Self):
+    def _read_header(self:Self) -> tuple[str,...]:
         row = []
         with self.fp.open("r", # Append mode
                                     encoding = default.ENCODING,
@@ -39,15 +36,17 @@ class WriteCSV(base.WriteOnlySpreadsheet):
                                     ) as file:
             rdr = csv.DictReader(file, dialect = self.dialect)
             fields = rdr.fieldnames
-        return fields 
+            if not fields: return tuple()
+        return tuple(fields)
 
-    def open(self:Self, fieldnames = []) -> None:
+    def open(self:Self,
+             fieldnames:Sequence[str] = tuple(), 
+             dialect:csv.Dialect = default.DIALECT) -> None:
+        self.dialect = dialect
         # If file exists, use first row as columns
         if not self.is_empty:
            # Get column data from existing file
-           origfields = self._read_header()
-           origfields.extend(fieldnames)
-           self.fields = origfields
+           self.fields = self._read_header() + tuple(fieldnames)
         else:
             self.fields = fieldnames
         self.file = self.fp.open("a", # Append mode
@@ -64,12 +63,13 @@ class WriteCSV(base.WriteOnlySpreadsheet):
 
     def save(self:Self) -> None:
         self._saved = False
-        self.file.flush() # Write data to file immediately
+        assert self.file, "Should not save if file has not been opened yet!"
+        if self.file: self.file.flush() # Write data to file immediately
         self._saved = True
 
     def addrow(self:Self,
                datarowdict: dict[str,object],
-               on_new_field:str = base.new_column_action.NEWFILE
+               on_new_field:str = new_column_action.NEWFILE
                ) -> None:
         if not self.is_open:
             raise sheetError(f"Trying to write into {self.fp} after closing the file.")        
@@ -78,7 +78,7 @@ class WriteCSV(base.WriteOnlySpreadsheet):
         diff = self.lacks_columns(datarowdict.keys() )        
         if diff: 
             log.warning(f"Missing column(s): {", ".join(diff)}.")
-            if on_new_field == base.new_column_action.NEWFILE:
+            if on_new_field == new_column_action.NEWFILE:
                 if not self.is_empty: # Not an empty file, need to create a backup
                     oldname = self.fp.stem
                     newname = self.fp.with_stem(str(oldname) +"_no_"+ "_".join(diff) )
@@ -99,15 +99,16 @@ class WriteCSV(base.WriteOnlySpreadsheet):
         self._saved = False
         # Can update  self.writer.fieldnames as long as header has not yet been written.
         self.writer.writeheader()
-        self.file.flush() # Write data to file immediately
+        assert self.file, "Should not save if file has not been opened yet!"
+        if self.file: self.file.flush() # Write data to file immediately
         self._saved = True
 
 
-class ReadCSV(base.ReadOnlySpreadsheet):
+class ReadCSV(ReadOnlySpreadsheet):
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def __init__(self:Self,
                  filename: str|Path,
-                 dialect:csv.Dialect = default.DIALECT) -> None: 
+                 dialect:csv.Dialect = default.DIALECT): 
         super().__init__(filename)
         self.dialect = dialect
         if self.fp.suffix not in SUFFIXES: 
@@ -129,12 +130,14 @@ class ReadCSV(base.ReadOnlySpreadsheet):
                                      )
         self._opened = True
 
-    def next(self:Self) -> dict[str,str]: 
+    def next(self:Self) -> csv.DictReader[str]: 
         return self.reader # Next in sequence as a dictionary
 
     @property
-    def fields(self:Self) -> tuple[str,...]: 
-        return tuple(self.reader.fieldnames)
+    def fields(self:Self) -> tuple[str,...]:
+        rv = self.reader.fieldnames
+        return tuple(self.reader.fieldnames or []) # Make sure the return value is a list, self.reader.fieldnames can return None
+    # Has no setter: we are reading only...
 
 if __name__ == '__main__':
     t = WriteCSV("test.csv")

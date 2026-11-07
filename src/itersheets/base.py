@@ -33,7 +33,7 @@ def list2printvalues( mylist: Collection[dict] )-> str:
     return "\n".join(out)
 
 # These should go to tools (and probably replaced with better tools by someone else)
-def unique(s: Sequence) ->tuple[str] :return tuple(dict.fromkeys(s)) 
+def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 
     
 def sanitize_filename(text:str) -> str:
     return text
@@ -41,7 +41,7 @@ def sanitize_filename(text:str) -> str:
     return re.sub(text,"-",dirty) # Replace all chars in dirty with -.
 
 class Spreadsheet(ABC):
-    def __init__(self, filename: str|Path) -> None: 
+    def __init__(self:Self, filename: str|Path) : 
         self.fp = Path(filename)
         self.file = None
         self._opened = False
@@ -67,11 +67,6 @@ class Spreadsheet(ABC):
     @property
     def fields(self:Self)-> tuple[str,...]: return self._fields
 
-    @fields.setter
-    def fields(self:Self, val) -> None:
-        self._fields = tuple(unique(val))
-        self._currentfields = set(self._fields)
-
     @abstractmethod        
     def open(self:Self, fieldnames: Sequence[str] = []) -> None:
         self._opened = True
@@ -91,14 +86,23 @@ class Spreadsheet(ABC):
 
 # ------------ WRITE ONLY SPREADSHEETS -------------    
 class WriteOnlySpreadsheet(Spreadsheet):
-    def __init__(self:Self, filename: str|Path) -> None:
+    def __init__(self:Self, filename: str|Path) :
         super().__init__(filename)
         self._saved = False
+
     @property
     def is_saved(self:Self) -> bool: return self._saved
 
+    @property
+    def fields(self:Self)-> tuple[str,...]: return self._fields
+
+    @fields.setter
+    def fields(self:Self, val) -> None:
+        self._fields = tuple(unique(val))
+        self._currentfields = set(self._fields)
+
     # Override parent class methods
-    def close(self, save=True) -> None:
+    def close(self:Self, save:bool=True) -> None:
         if save: self.save()
         else:
             if not self._saved: log.warning(f"Closing file {self.filename} without saving first.")
@@ -110,12 +114,12 @@ class WriteOnlySpreadsheet(Spreadsheet):
     @abstractmethod        
     def addrow(self:Self,
                datarowdict: dict[str,object],
-               on_new_key:str = new_column_action.NEWFILE
+               on_new_field:str = new_column_action.NEWFILE
                ) -> None:
         self._saved = False
 
    
-    def add_line_from_dict(self,
+    def add_line_from_dict(self:Self,
                            datarowdict: dict[str,object],
                            on_new_key:str = new_column_action.NEWFILE) -> None:
         """Write a row based on a dictionary of column_header: value items.
@@ -123,7 +127,7 @@ class WriteOnlySpreadsheet(Spreadsheet):
         If the column_header is not included in the existing file structure, raise a ValueError."""
         self.addrow( json2printdict(datarowdict), on_new_key )
         
-    def add_line_from_json(self, datarowdict: dict[str,object],
+    def add_line_from_json(self:Self, datarowdict: dict[str,object],
                            on_new_key:str = new_column_action.NEWFILE ) -> None:
         self.addrow( json2printdict(datarowdict), on_new_key )
 
@@ -134,11 +138,11 @@ class WriteOnlySpreadsheet(Spreadsheet):
         self.fp.replace(newpath)
 # -------------- READING ----------------
 class ReadOnlySpreadsheet(Spreadsheet):
-    def __init__(self:Self, filename: str|Path) -> None:
+    def __init__(self:Self, filename: str|Path) :
         super().__init__(filename)
 
     # Iterator approach
     @abstractmethod        
-    def next(self:Self) -> tuple[str,...]: 
-        return tuple()
+    def next(self:Self) -> Iterable[str]: 
+        return iter([])
 
