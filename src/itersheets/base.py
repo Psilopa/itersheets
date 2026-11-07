@@ -5,7 +5,7 @@ from pathlib import Path
 import logging, re
 
 # My own modules
-from typing import * # For type checking tools
+from mytyping import * # For type checking tools
 from errors import sheetError
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
@@ -80,14 +80,18 @@ class WriteOnlySpreadsheet(Spreadsheet):
         self._saved = False
         self._fields = [] # Unique column names
         self._currentfields = set()
+
     @property
     def fields(self:Self)-> list[str]: return self._fields
+
     @fields.setter
     def fields(self:Self, val) -> None:
         self._fields = list(unique(val))
         self._currentfields = set(self._fields)
+
     @property
     def is_saved(self:Self) -> bool: return self._saved
+
     # Override parent class methods
     def close(self, save=True) -> None:
         if save: self.save()
@@ -118,7 +122,11 @@ class WriteOnlySpreadsheet(Spreadsheet):
                            on_new_key:str = new_column_action.NEWFILE ) -> None:
         self.addrow( json2printdict(datarowdict), on_new_key )
 
-
+    def move(self:Self, newpath, overwrite=False):
+        if not self.exists: return # Nothing to do.
+        if newpath.exists() and not overwrite:
+            raise sheetError(f"Will not overwrite {newpath}")
+        self.fp.replace(newpath)
 # -------------- READING ----------------
 class ReadOnlySpreadsheet(Spreadsheet):
     def __init__(self:Self, filename: str|Path) -> None:
