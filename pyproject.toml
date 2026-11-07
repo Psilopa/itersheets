@@ -1,0 +1,53 @@
+# This is mainly docmumantation: for 'installing', use 
+# pip install -r requirements.txt
+[build-system]
+requires = ['setuptools==82.0.1', 'setuptools-scm==10.0.5']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'itersheets'
+description = "Iterative reading and writing of spreadsheets with a dictionary mapping approach: a file is assumed to have unique values in on the 1st line."
+version = 'v0.1'
+#dynamic = ['version']
+authors = [ {name = "Jere Kahanpää"} ]
+readme = "README.md"
+license = "MIT licence"
+license-files = ["LICEN[CS]E*"]
+requires-python = ">= 3.13" #
+# These should also be listed in requirements.txt !
+dependencies = [   
+#"jsonpickle==4.1.2",
+#"numpy==2.5.3",
+#"opencv_python==5.0.0.93",
+#"protobuf==7.36.2",
+#"pynput==1.8.2",
+#"pyzbar==0.1.9",
+#"watchdog==6.0.0",
+#"google_genai==2.26.0",
+#"google_auth_oauthlib==1.5.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/Psilopa/itersheets"
+Repository = "https://github.com/Psilopa/itersheets"
+
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
+project-excludes = [
+    "**/legacy/*",
+    "**/typing.py",
+]
+
+
+# Dynamic versioning, currently not used
+#[tool.setuptools_scm]
+#version_scheme = 'no-guess-dev'
+#local_scheme = 'no-local-version'
+#version_file = "VERSION.txt"

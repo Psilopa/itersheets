@@ -1,0 +1,136 @@
+# DEPENDS ON PYTHON 3.14 (path.copyt)
+# STDlib
+from abc import ABC, abstractmethod
+from pathlib import Path
+import logging, re
+
+# My own modules
+from typing import * # For type checking tools
+from errors import sheetError
+
+log = logging.getLogger() # Set from main script if fancy logging is required.
+
+class new_column_action:
+    NEWFILE = "newfile"
+
+def json2printdict(jsondata: str | dict[str,Any] ) -> dict[str,Any]:
+    "Converts a string with JSON data or a corresponding dictionary with prettyprinted content."
+    # TODO: this is not pasticularly good
+    if isinstance(jsondata, str):  jsondata = json.loads(jsondata) 
+    # Reformat a JSON reply to for Table output
+    rv: dict[str,str] = {}
+    for key in jsondata.keys():
+        if isinstance(jsondata[key], list):
+            rv[key] = list2printvalues( jsondata[key] )
+        else: rv[key] = jsondata[key]
+    return rv
+
+# These should go to tools (and probably replaced with better tools by someone else)
+def unique(s: Sequence) ->tuple :return tuple(dict.fromkeys(s)) 
+    
+def sanitize_filename(text:str) -> str:
+    return text
+    dirty = "".join(["\\[/\\?%*:|\"<>0x7F0x00-0x1F]", chr(0x1F) * 15])
+    return re.sub(text,"-",dirty) # Replace all chars in dirty with -.
+
+class Spreadsheet(ABC):
+    def __init__(self, filename: str|Path) -> None: 
+        self.fp = Path(filename)
+        self.file = None
+        self._opened = False
+        pass
+
+    @property
+    def filename(self:Self) -> bool: return self.fp
+
+    @property
+    def is_open(self:Self) -> bool: return self._opened
+
+    @property
+    def exists(self:Self) -> bool:
+        if not self.fp or not self.fp.exists(): return False
+        else: return True
+
+    @property
+    def is_empty(self:Self) -> bool:
+        if not self.exists: return True
+        return self.fp.is_file() and ( self.fp.stat().st_size == 0 )
+
+    @abstractmethod        
+    def open(self:Self, fieldnames: Sequence[str] = []) -> None:
+        self._opened = True
+
+    def close(self:Self) -> None:
+        "Closes the associated file(s) and marks the Spreadsheet as not open."
+        if self.file: self.file.close()
+        self._opened = False
+
+    def has_columns(self:Self, fields:Collection[str]) -> bool:
+        "True is spreadsheet has a field for each value in fields."
+        return self._currentfields.issuperset( set(fields) )
+
+    def lacks_columns(self:Self, fields:Collection[str]) -> set[str]:
+        "Returns a set of field names that are missing from the spreadsheet."
+        return set(fields).difference( self._currentfields )
+
+# ------------ WRITE ONLY SPREADSHEETS -------------    
+class WriteOnlySpreadsheet(Spreadsheet):
+    def __init__(self:Self, filename: str|Path) -> None:
+        super().__init__(filename)
+        self._saved = False
+        self._fields = [] # Unique column names
+        self._currentfields = set()
+    @property
+    def fields(self:Self)-> list[str]: return self._fields
+    @fields.setter
+    def fields(self:Self, val) -> None:
+        self._fields = list(unique(val))
+        self._currentfields = set(self._fields)
+    @property
+    def is_saved(self:Self) -> bool: return self._saved
+    # Override parent class methods
+    def close(self, save=True) -> None:
+        if save: self.save()
+        else:
+            if not self._saved: log.warning(f"Closing file {self.filename} without saving first.")
+        super().close()
+
+    @abstractmethod        
+    def save(self:Self): pass
+        
+    @abstractmethod        
+    def addrow(self:Self,
+               datarowdict: dict[str,object],
+               on_new_key:str = new_column_action.NEWFILE
+               ) -> None:
+        self._saved = False
+
+   
+    def add_line_from_dict(self,
+                           datarowdict: dict[str,object],
+                           on_new_key:str = new_column_action.NEWFILE) -> None:
+        """Write a row based on a dictionary of column_header: value items.
+
+        If the column_header is not included in the existing file structure, raise a ValueError."""
+        self.addrow( json2printdict(datarowdict), on_new_key )
+        
+    def add_line_from_json(self, datarowdict: dict[str,object],
+                           on_new_key:str = new_column_action.NEWFILE ) -> None:
+        self.addrow( json2printdict(datarowdict), on_new_key )
+
+
+# -------------- READING ----------------
+class ReadOnlySpreadsheet(Spreadsheet):
+    def __init__(self:Self, filename: str|Path) -> None:
+        super().__init__(filename)
+
+    # Iterator approach
+    @abstractmethod        
+    def next(self:Self) -> tuple[str,...]: 
+        return tuple()
+
+    @property
+    @abstractmethod        
+    def fields(self:Self) -> tuple[str]:
+        assert False, "Abstract fieldnames called."
+        return tuple()

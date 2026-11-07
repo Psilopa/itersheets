@@ -1,0 +1,147 @@
+# STDlib
+import logging, csv, re
+from pathlib import Path
+import json as jsonmodule
+
+# My own modules
+from errors import sheetError
+import base
+from typing import * # For type checking tools
+
+SUFFIXES = [".csv", "csv"]
+class default:
+    DIALECT = csv.excel()
+    QUOTING = csv.QUOTE_STRINGS
+    ENCODING_ERRORS = "convert"
+    ENCODING = "utf8"
+    NEWLINE = ""
+
+log = logging.getLogger() # Set from main script if fancy logging is required.
+# These should go to tools (and probably replaced with better tools by someone else)
+
+class WriteCSV(base.WriteOnlySpreadsheet): 
+    # TODO: Convert to use the DictWriter class (needs data-pre-work to handle duplicate 'keys')
+    """ """
+    def __init__(self:Self,
+                 filename: str|Path,
+                 dialect:csv.Dialect = default.DIALECT) -> None: 
+        super().__init__(filename)
+        self.dialect = dialect
+        if self.fp.suffix not in SUFFIXES: 
+            raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
+    # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
+    def _read_header(self:Self):
+        row = []
+        with self.fp.open("r", # Append mode
+                                    encoding = default.ENCODING,
+                                    newline = default.NEWLINE,
+                                    errors = default.ENCODING_ERRORS
+                                    ) as file:
+            rdr = csv.DictReader(file, dialect = self.dialect)
+            fields = rdr.fieldnames
+        return fields 
+
+    def open(self:Self, fieldnames = []) -> None:
+        # If file exists, use first row as columns
+        if not self.is_empty:
+           # Get column data from existing file
+           origfields = self._read_header()
+           origfields.extend(fieldnames)
+           self.fields = origfields
+        else:
+            self.fields = fieldnames
+        self.file = self.fp.open("a", # Append mode
+                                     # SHOULD SHOULD COME FROM self.dialect?
+                                    encoding = default.ENCODING,
+                                    newline = default.NEWLINE,
+                                    errors = default.ENCODING_ERRORS
+                                    )
+        self.writer = csv.DictWriter(self.file, self.fields,
+                                     dialect = self.dialect,
+                                     extrasaction='raise',
+                                     restval = "")
+        self._opened = True
+
+    def save(self:Self) -> None:
+        if self.is_empty:
+            self.writeheader()
+        self._saved = False
+        self.file.flush() # Write data to file immediately
+        self._saved = True
+
+    def addrow(self:Self,
+               datarowdict: dict[str,object],
+               on_new_field:str = base.new_column_action.NEWFILE
+               ) -> None:
+        if not self.is_open:
+            raise sheetError(f"Trying to write into {self.fp} after closing the file.")        
+        diff = self.lacks_columns(datarowdict.keys() )        
+        if diff: 
+            log.warning(f"Missing column(s): {", ".join(diff)}.")
+            if on_new_field == base.new_column_action.NEWFILE:
+                if not self.is_empty: # Not an empty file, need to create a backup
+                    oldname = self.fp.stem
+                    newname = self.fp.with_stem(str(oldname) +"_no_"+ "_".join(diff) )
+                    self.move(newname, overwrite = True)
+                self.fields.extend(diff)
+                self.open(fieldnames = self.fields) # Reopen as a new file
+            else:
+                sheetError(f"New column name, but no given way of adding columns specified.")
+        self.writer.writerow(  datarowdict )
+        self.save()
+        
+    def writeheader(self:Self) -> None:
+        # Can update  self.writer.fieldnames as long as header has not yet been written.
+        # TODO: ERROR STATE HANDLING
+        if not self.is_empty:
+            raise sheetError("Trying to set a head line in a non-empty file {self.fp}.")
+        self._saved = False
+        self.writer.writeheader()
+        self.file.flush() # Write data to file immediately
+        self._saved = True
+
+
+class ReadCSV(base.ReadOnlySpreadsheet):
+    # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
+    def __init__(self:Self,
+                 filename: str|Path,
+                 dialect:csv.Dialect = default.DIALECT) -> None: 
+        super().__init__(filename)
+        self.dialect = dialect
+        if self.fp.suffix not in SUFFIXES: 
+            raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
+    def open(self:Self) -> None:
+        if not self.exists:
+            raise sheetError(f"Coulf not access file {self.fp}.")
+        self.file = self.fp.open("r",
+                                     # SHOULD SHOULD COME FROM self.dialect?
+                                    encoding = default.ENCODING,
+                                    newline = "",
+                                    errors = default.ENCODING_ERRORS
+                                    )
+        self.reader = csv.DictReader(self.file,
+                                    delimiter = ",",
+#                                     dialect = self.dialect,
+                                     restval="" # Value if cell is empty
+                                     )
+        self._opened = True
+    def next(self:Self) -> dict[str,str]: 
+        return self.reader # Next in sequence as a dictionary
+    @property
+    def fields(self:Self) -> tuple[str,...]: 
+        return tuple(self.reader.fieldnames)
+
+if __name__ == '__main__':
+#    t = WriteCSV("test.csv")
+#    print("First open")
+#    t.open(["col_fooo", "col_baar"])
+#    print("Filename is", t.filename)
+#    t.add_line_from_dict({"col_foo":"test", "col_bar":"test2", "col_baz":"test3"})
+#    t.add_line_from_dict({"col_fooo":"testB", "col_bar":"testB", "col_baz":"testB"})
+#    t.save()
+    t = ReadCSV("test.csv")
+    t.open()
+    print("fields = ", t.fields)
+    for d in t.next():
+        print(repr(d))
+    t.close()
