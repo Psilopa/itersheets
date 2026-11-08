@@ -1,5 +1,6 @@
 # Itersheets
-Iterative reading and writing of spreadsheets with a dictionary mapping approach: a file is assumed to have unique values in on the 1st line.
+Reading and writing of spreadsheets with a dictionary mapping approach: a file is assumed to have unique values in on the 1st line.
+The available functionality is limited and most restriced to basic data reading and writing: the main purpose of this module is to allow easy cross-format support for these basic tasks.
 
 Targets multiple formats (so far, CSV and XLSX are supported). 
 
