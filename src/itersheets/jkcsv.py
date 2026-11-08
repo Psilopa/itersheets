@@ -3,9 +3,9 @@ import logging, csv, re
 from pathlib import Path
 
 # My own modules
-from errors import sheetError
-from base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
-from mytyping import * # For type checking tools
+from .errors import sheetError
+from .base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
+from .mytyping import * # For type checking tools
 
 SUFFIXES = [".csv", "csv"]
 class default:
@@ -96,7 +96,7 @@ class WriterCSV(WriteOnlySpreadsheet):
                 # Force header writing
                 self.writeheader()
             else:
-                sheetError(f"New column name, but no given way of adding columns specified.")
+                raise sheetError(f"New column name, but no given way of adding columns specified. WriterCSV supports only swapping to a new file for now.")
         self.writer.writerow(  datarowdict )
         self.save()
         

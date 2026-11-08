@@ -7,8 +7,8 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
 
 # My own modules
-from errors import sheetError
-from base import ReadOnlySpreadsheet
+from .errors import sheetError
+from .base import ReadOnlySpreadsheet
 #from .mytyping import * # For type checking tools
 
 log = logging.getLogger() # Set from main script if fancy logging is required.

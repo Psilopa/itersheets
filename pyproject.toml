@@ -6,8 +6,8 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'itersheets'
-description = "Iterative reading and writing of spreadsheets with a dictionary mapping approach: a file is assumed to have unique values in on the 1st line."
-version = 'v0.3'
+description = "Reading and writing of spreadsheets file or CSV row by row with a dictionary mapping approach. Currently supports CSV, XLSX and ODS."
+version = 'v0.4'
 #dynamic = ['version']
 authors = [ {name = "Jere Kahanpää"} ]
 readme = "README.md"
@@ -24,9 +24,8 @@ dependencies = [
 Homepage = "https://github.com/Psilopa/itersheets"
 Repository = "https://github.com/Psilopa/itersheets"
 
-
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 
 [tool.pyrefly]
 project-includes = [

@@ -18,6 +18,9 @@ venv/
 .venv/
 env/
 .env/
+dist/
+src/itersheets.egg-info/
+
 *.csv
 *.xlsx
 *.ods

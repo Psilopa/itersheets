@@ -6,8 +6,8 @@ from pathlib import Path
 from odfdo import Document, Row, Table
 
 # My own modules
-from errors import sheetError
-from base import ReadOnlySpreadsheet
+from .errors import sheetError
+from .base import ReadOnlySpreadsheet
 #from .mytyping import * # For type checking tools
 
 def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 

@@ -3,10 +3,10 @@
 from pathlib import Path
 
 # My own modules
-from errors import sheetError
-from base import ReadOnlySpreadsheet
-from jkxlsx import XLSXFile
-from jkods import ODSFile
+from .errors import sheetError
+from .base import ReadOnlySpreadsheet
+from .jkxlsx import XLSXFile
+from .jkods import ODSFile
 
 class ReaderBase(ReadOnlySpreadsheet):
     def __init__(self:Self, filename: str|Path): 
