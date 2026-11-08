@@ -1,8 +1,8 @@
 # Itersheets
-Reading and writing of spreadsheets with a dictionary mapping approach: a file is assumed to have unique values in on the 1st line.
+Reading and writing of spreadsheets with a dictionary mapping approach. A file is assumed to have unique values in on the 1st line.
 The available functionality is limited and most restriced to basic data reading and writing: the main purpose of this module is to allow easy cross-format support for these basic tasks.
 
-Targets multiple formats (so far, CSV and XLSX are supported). 
+Targets multiple formats. CSV XLSX, and ODS are currently supported. 
 
 # Installation
 For now, you have to build your own Python package if you want to use this as a simple import. 
@@ -31,13 +31,13 @@ t.close()
 ## Accessing file and file content properties
 
 ```
-print( "t.filename = ", t.filename )
-print( "t.is_open = ", t.is_open )
-print( "t.exists = ", t.exists )
-print( "t.is_empty = ", t.is_empty )
-print( "t.fields = ", t.fields )
-print( "t.has_columns = ", t.has_columns(["col_foo","col_bar"]) ) # Returns True
-print( "t.has_columns = ", t.has_columns(["col_baz","col_missing"]) ) # Returns False
+print( "t.filename = ", t.filename ) # Path
+print( "t.is_open = ", t.is_open ) # Boolean 
+print( "t.exists = ", t.exists ) # Boolean
+print( "t.is_empty = ", t.is_empty ) # Boolean
+print( "t.fields = ", t.fields ) # List of field names (=unique values on the 1st row)
+print( "t.has_columns = ", t.has_columns(["col_foo","col_bar"]) ) # Boolean, True with the file written above
+print( "t.has_columns = ", t.has_columns(["col_baz","col_missing"]) ) # Boolean, False with the file written above
 print( "t.lacks_columns = ", t.lacks_columns(["col_baz","col_missing"]) ) # Returns a set of missing columns
-print( "t.is_open = ", t.is_open )
+
 ```
