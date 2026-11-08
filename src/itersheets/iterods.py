@@ -4,13 +4,11 @@ from pathlib import Path
 
 # Non-stdlib
 from odfdo import Document, Row, Table
-#from openpyxl import Workbook, load_workbook
-#from openpyxl.styles import Font
 
 # My own modules
 from errors import sheetError
 from base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
-#from .mytyping import * # For type checking tools
+from mytyping import * # For type checking tools
 
 def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 
 #BOLDFONT = Font(bold=True)
@@ -24,8 +22,8 @@ class ODSFile():
         self.wb = None
         self.table = None
         
-    def read_header_values(self:Self) -> tuple:
-        tmpwb = Document(self.fp)
+    def format_read_header(self:Self, filepath:Path) -> tuple:
+        tmpwb = Document(filepath)
         assert tmpwb, "wb should exist when we try to read a row in _read_header_values()."
         tmptable = tmpwb.body.tables[0]
         maxlen = int(tmptable.size[0])
@@ -34,28 +32,42 @@ class ODSFile():
         tmpwb = None 
         return rv
 
-    def open_ods(self:Self, fieldnames:type_fields = tuple() ):
-        self.wb = Document(self.fp)
+    def format_open(self:Self, filepath: Path):
+        self.wb = Document(filepath)
+        if not self.wb:
+            raise sheetError(f"Could not open file {filepath}")
         self.table = self.wb.body.tables[0]
-        if not self.table:
-            raise sheetError(f"Could not find sheet {sheetname} in table {self.fp}")
 
-    def create_ods(self:Self, fieldnames:type_fields = tuple() ):
+    def format_create(self:Self):
         self.wb = Document("spreadsheet")
         self.wb.body.clear()
         self.table = Table(name="Table1")
         self.wb.body.append(self.table)
 
-    def map_fields_to_columns(self:Self, fields:type_fields):
+    def format_map_fields_to_columns(self:Self, fields:type_fields):
         return { k:v for k,v in zip(fields, range(len(fields))) } 
 
-    def get_row_values(self:Self, nrow:int) -> tuple:
-        return tuple( self.table.get_row(nrow).get_values() ) 
+    def format_get_row_values(self:Self, nrow:int) -> tuple:
+        assert self.table, "Self.table should exist when we ask for row values."
+        return tuple( self.table.get_row(nrow).get_values() )
 
-    def ods_save(self:Self) -> None:
-        return self.table.get_row(nrow).get_values() 
+    def format_set_row_values(self:Self, nrow:int, values:Sequence) -> None:
+        assert self.table, "Self.table should exist when we ask for row values."
+        row = self.table.get_row(nrow)
+        row.set_values(values)
+        self.table.set_row(nrow, row)
+
+    def format_save(self:Self, filepath:Path) -> None:
+        assert self.wb, "Workbook should exist when we try to save."
+        self.wb.save(filepath)
     
-    
+    def format_add_row(self:Self, values: Sequence):
+        assert self.table, "Self.table should exist when we try to add a row."
+        row = Row()
+        for n in range(len(values)):
+            row.set_value(n, values[n])
+        self.table.append(row)
+
 
 class WriteXLSX(WriteOnlySpreadsheet, ODSFile): 
     def __init__(self:Self, filename: str|Path): 
@@ -70,18 +82,18 @@ class WriteXLSX(WriteOnlySpreadsheet, ODSFile):
              ) -> None:
         # If file exists, use first row as columns
         if not self.is_empty:
-            self.open_ods(fieldnames)
-            self.fields = self.read_header_values() + tuple(fieldnames)
+            self.format_open(self.fp)
+            self.fields = self.format_read_header(self.fp) + tuple(fieldnames)
         else:
-            self.create_ods(fieldnames)
+            self.format_create()
             self.fields = fieldnames
         # Map field name to column number (0-based indexing as we do not use this numbering directly in Excel)
-        self.field2col = self.map_fields_to_columns(self.fields)
+        self.field2col = self.format_map_fields_to_columns(self.fields)
         self._opened = True
 
     def save(self:Self) -> None:
         self._saved = False
-        self.wb.save(self.fp)
+        self.format_save(self.fp)
         self._saved = True
 
     def addrow(self:Self,
@@ -109,23 +121,15 @@ class WriteXLSX(WriteOnlySpreadsheet, ODSFile):
             pos = self.field2col[colname]
             outrow[pos] = str(value) if value else ""
         row = Row()
-        self._addrow(outrow)
+        self.format_add_row(outrow)
         self.save() # Saving after each insert if quite heavy
-
-    def _addrow(self:Self,values: Sequence):
-        row = Row()
-        for n in range(len(values)):
-            row.set_value(n, values[n])
-        self.table.append(row)
 
     def writeheader(self:Self) -> None:
         assert self.wb, "self.wb sould exist when we try to writeheader()."
         if self.is_empty: # E,pty file, we need to add a row 
-            self._addrow(self.fields)
+            self.format_add_row(self.fields)
         else: # Update existing header line
-            row = self.table.get_row(0)
-            row.set_values(self.fields)
-            self.table.set_row(0, row)
+            self.format_set_row_values(0, self.fields)
         self.save() 
 
     def close(self, save:bool = True) -> None:
@@ -171,9 +175,9 @@ class ReadODS(ReadOnlySpreadsheet, ODSFile):
         self._opened = False
         if not self.exists:
             raise sheetError(f"Coulf not access file {self.fp}.")
-        self.open_ods()
-        self.iter = iter(rowIterator(self.table, self.get_row_values))        
-        self.fields = self.get_row_values(0)       
+        self.format_open(self.fp)
+        self.iter = iter(rowIterator(self.table, self.format_get_row_values))        
+        self.fields = self.format_get_row_values(0)       
         self._opened = True
 
     def next(self:Self) -> Iterator[tuple]:
