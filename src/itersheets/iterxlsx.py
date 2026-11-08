@@ -13,6 +13,7 @@ from base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
 
 BOLDFONT = Font(bold=True)
 SUFFIXES = [".xlsx", "xlsx"]
+FORMAT_NAME = "Excel"
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
 
@@ -21,7 +22,7 @@ class WriteXLSX(WriteOnlySpreadsheet):
         super().__init__(filename)
         self.field2col = {} # Maps column name to column number
         if self.fp.suffix.lower() not in SUFFIXES: 
-            raise sheetError(f"XLSX output file name must end in '.csv'. {self.fp} fails")
+            raise sheetError(f"{FORMAT_NAME} output file name must end in {SUFFIXES[0]}. {self.fp} fails")
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def _read_header(self:Self) -> tuple:
         wb = load_workbook(self.fp)
@@ -110,7 +111,7 @@ class ReadXLSX(ReadOnlySpreadsheet):
         self.wb = None
         self.ws = None
         if self.fp.suffix.lower() not in SUFFIXES: 
-            raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
+            raise sheetError(f"{FORMAT_NAME} inputput file name must end in {SUFFIXES[0]}. {self.fp} fails")
 
     def open(self:Self) -> None:
         self._opened = False
