@@ -17,44 +17,95 @@ FORMAT_NAME = "Excel"
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
 
-class WriteXLSX(WriteOnlySpreadsheet): 
+class XLSXFile():    
+    def __init__(self:Self):
+        self._reset()
+
+    def _reset(self:Self):
+        self.wb = None
+        self.ws = None # ODS Table  equivalent
+        
+    def format_read_header(self:Self, filepath:Path) -> tuple:
+        wb = load_workbook(filepath)
+        assert wb, "wb should exist when we try to read a row in format_read_header()."
+        ws = wb.active
+        assert ws, "ws should exist when we try to read a row in format_read_header()."
+        rv = tuple(x.value for x in ws[1:1])
+        wb.close()
+        return rv
+
+    def format_open(self:Self, filepath: Path):
+        if not filepath.exists(): # TODO: test for readable.
+            raise sheetError(f"File {filepath} does not exist or is unavailable.")
+        self.wb = load_workbook(filepath)        
+        if not self.wb:
+            raise sheetError(f"Could not open file {filepath}")
+        self.ws = self.wb.active
+
+    def format_create(self:Self):
+        self.wb = Workbook()
+        assert self.wb, "wb should exist when we try to read a row in format_create()."
+        self.ws = self.wb.active
+
+    def format_map_fields_to_columns(self:Self, fields:type_fields):
+        return { k:v for k,v in zip(fields, range(len(fields))) } 
+    
+    def format_add_row(self:Self, values: Sequence):
+        assert self.ws, "self.ws sould exist when we try to addrow()."
+        self.ws.append( values )
+
+    def format_get_row_values(self:Self, nrow:int) -> tuple:
+        assert self.ws, "self.ws sould exist when we try to get row values."
+        return tuple(x.value for x in ws[nrow+1:nrow+1])
+
+    def format_set_row_values(self:Self, nrow:int, values:Sequence) -> None:
+        max_col = len(values)
+        assert self.ws, "self.ws sould exist when we try to writeheader()."
+        for i in range(max_col):# 1-based indexing in Excel
+            cell = self.ws.cell(row= nrow+1, column = i+1, value= values[i])
+                
+    def format_set_row_font(self:Self, nrow:int, font):
+        assert self.ws, "self.ws sould exist when we try to writeheader()."
+        for cell in self.ws[nrow+1:nrow+1]:# 1-based indexing in Excel
+            cell.font = font
+
+    def format_save(self:Self, filepath:Path) -> None:
+        # TODO: ERROR HANDLING ON BAD PATH
+        self.wb.save(filepath)
+
+    def format_close(self:Self, filepath:Path=None) -> None:
+        if self.wb and filepath:
+            self.format_save(filepath)
+        if self.wb:
+            self.wb.close()
+        self._reset()
+
+class WriteXLSX(WriteOnlySpreadsheet, XLSXFile): 
     def __init__(self:Self, filename: str|Path): 
         super().__init__(filename)
         self.field2col = {} # Maps column name to column number
         if self.fp.suffix.lower() not in SUFFIXES: 
             raise sheetError(f"{FORMAT_NAME} output file name must end in {SUFFIXES[0]}. {self.fp} fails")
-    # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
-    def _read_header(self:Self) -> tuple:
-        wb = load_workbook(self.fp)
-        ws = wb.active
-        assert ws, "ws should exist when we try to read a row in _read_header()."
-        iterator = ws.iter_rows(min_row=1, max_row=1, values_only=True) # 1-based indexing, Excel-style
-        rv = next(iterator)
-        wb.close()
-        return rv
 
+    # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def open(self:Self,
              fieldnames:Sequence[str] = tuple()
              ) -> None:
-        # If file exists, use first row as columns
+        self._opened = False        
         if not self.is_empty:
-            # Get column data from existing file
-            self.fields = self._read_header() + tuple(fieldnames)
-            self.wb = load_workbook(self.fp)
-            self.ws = self.wb.active
+            self.format_open(self.fp)
+             # If file exists, use first row as columns + any additional specified by useer
+            self.fields = self.format_read_header(self.fp) + tuple(fieldnames)        
         else:
+            self.format_create()
             self.fields = fieldnames
-            self.wb = Workbook()
-            self.ws = self.wb.active
-#            self.ws.title = ""
         # Map field name to column number (0-based indexing as we do not use this numbering directly in Excel)
-        self.field2col = { k:v for k,v in zip(self.fields, range(len(self.fields))) } 
-        print(self.field2col)
+        self.field2col = self.format_map_fields_to_columns(self.fields)
         self._opened = True
 
     def save(self:Self) -> None:
         self._saved = False
-        self.wb.save(self.fp)
+        self.format_save(self.fp)
         self._saved = True
 
     def addrow(self:Self,
@@ -81,56 +132,46 @@ class WriteXLSX(WriteOnlySpreadsheet):
         for colname,value in datarowdict.items():
             pos = self.field2col[colname]
             outrow[pos] = str(value) if value else ""
-        assert self.ws, "self.ws sould exist when we try to addrow()."
-        self.ws.append( outrow )
+        self.format_add_row( outrow )
         self.save() # Saving after each insert if quite heavy
         
     def writeheader(self:Self) -> None:
         # TODO: ERROR STATE HANDLING
-        # TODO: THIS SHOULD ALWAYS ACCESS LINE 1
-        max_col = len(self.fields)
-        n = 0
         self._saved = False
         assert self.ws, "self.ws sould exist when we try to writeheader()."
-        for col in self.ws.iter_cols(min_row=1, max_col=max_col, max_row=1): # 1-based indexing in Excel
-            for cell in col:
-                cell.value = self.fields[n]
-                cell.font = BOLDFONT
-                n += 1
+        self.format_set_row_values(0,self.fields)
+        self.format_set_row_font(0, BOLDFONT)
+        # Do not save just for a header, wait for a data row
 
     def close(self, save:bool=True):
         if save: self.save()
         if not self._saved: log.warning(f"Closing file {self.filename} without saving first.")
         self.wb.close()
         self._opened = False
+        self.field2col = {} # Maps column name to column number
 
-class ReadXLSX(ReadOnlySpreadsheet):
+class ReadXLSX(ReadOnlySpreadsheet, XLSXFile):
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
+    # Uses the openpyxl-provided iterator directly for row access
     def __init__(self:Self, filename: str|Path): 
         super().__init__(filename)
-        self.wb = None
-        self.ws = None
+        self._reset_variables()
         if self.fp.suffix.lower() not in SUFFIXES: 
             raise sheetError(f"{FORMAT_NAME} inputput file name must end in {SUFFIXES[0]}. {self.fp} fails")
 
+    def _reset_variables(self:Self):
+        self._fields = tuple()
+
     def open(self:Self) -> None:
-        self._opened = False
-        if not self.exists:
-            raise sheetError(f"Coulf not access file {self.fp}.")
-        self.wb = load_workbook(self.fp)
-        self.ws = self.wb.active
-        if not self.ws:
-            raise sheetError("Could not accewss file {self.filename}")
+        self.format_open(self.fp)
         self.iter = self.ws.values
         self._fields = next(self.iter) # Grab 1st row and use it as field names
-        self._opened = True
 
     def next(self:Self) :        
         return self.iter or tuple(tuple())# Return next row from the iterator
 
     def close(self:Self) -> None:
-        if self.wb: self.wb.close()
-        self._opened = False
+        self.format_close()
         
     @property
     def fields(self:Self)-> tuple[str,...]: return tuple(self._fields)
@@ -147,7 +188,6 @@ if __name__ == '__main__':
     t.close()
     t = ReadXLSX( testfile )
     t.open()
-    print("HEADER LINE", t.fields)
     for d in t.next():
         # Convert everything to strings and None to ""
         d = tuple(str(x) if x else "" for x in d)

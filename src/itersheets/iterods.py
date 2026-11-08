@@ -8,7 +8,7 @@ from odfdo import Document, Row, Table
 # My own modules
 from errors import sheetError
 from base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
-from mytyping import * # For type checking tools
+#from .mytyping import * # For type checking tools
 
 def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 
 #BOLDFONT = Font(bold=True)
@@ -19,6 +19,9 @@ log = logging.getLogger() # Set from main script if fancy logging is required.
 
 class ODSFile():    
     def __init__(self:Self):
+        self._reset()
+
+    def _reset(self:Self):
         self.wb = None
         self.table = None
         
@@ -33,6 +36,8 @@ class ODSFile():
         return rv
 
     def format_open(self:Self, filepath: Path):
+        if not filepath.exists():  # TODO: test for readable.
+            raise sheetError(f"File {filepath} does not exist or is unavailable.")
         self.wb = Document(filepath)
         if not self.wb:
             raise sheetError(f"Could not open file {filepath}")
@@ -40,12 +45,21 @@ class ODSFile():
 
     def format_create(self:Self):
         self.wb = Document("spreadsheet")
+        if not self.wb:
+            raise sheetError(f"Could not create a new Excel file object.")
         self.wb.body.clear()
         self.table = Table(name="Table1")
         self.wb.body.append(self.table)
 
     def format_map_fields_to_columns(self:Self, fields:type_fields):
         return { k:v for k,v in zip(fields, range(len(fields))) } 
+
+    def format_add_row(self:Self, values: Sequence):
+        assert self.table, "Self.table should exist when we try to add a row."
+        row = Row()
+        for n in range(len(values)):
+            row.set_value(n, values[n])
+        self.table.append(row)
 
     def format_get_row_values(self:Self, nrow:int) -> tuple:
         assert self.table, "Self.table should exist when we ask for row values."
@@ -57,29 +71,34 @@ class ODSFile():
         row.set_values(values)
         self.table.set_row(nrow, row)
 
+    def format_set_row_font(self:Self, nrow:int, font):
+        pass
+
     def format_save(self:Self, filepath:Path) -> None:
+        # TODO: ERROR HANDLING ON BAD PATH
         assert self.wb, "Workbook should exist when we try to save."
         self.wb.save(filepath)
-    
-    def format_add_row(self:Self, values: Sequence):
-        assert self.table, "Self.table should exist when we try to add a row."
-        row = Row()
-        for n in range(len(values)):
-            row.set_value(n, values[n])
-        self.table.append(row)
 
+    def format_close(self:Self, filepath:Path=None) -> None:
+        if self.wb and filepath:
+            self.format_save(filepath)
+        if self.wb:
+            self.wb.close()
+        self._reset()
 
-class WriteXLSX(WriteOnlySpreadsheet, ODSFile): 
+class WriteODS(WriteOnlySpreadsheet, ODSFile): 
     def __init__(self:Self, filename: str|Path): 
         WriteOnlySpreadsheet.__init__(self,filename)
         ODSFile.__init__(self) # This convenience class keeping ODS-specific loaders.
         self.field2col = {} # Maps column name to column number
         if self.fp.suffix.lower() not in SUFFIXES: 
             raise sheetError(f"{FORMAT_NAME} output file name must end in {SUFFIXES[0]}. {self.fp} fails")
+
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def open(self:Self,
              fieldnames:Sequence[str] = tuple()
              ) -> None:
+        self._opened = False        
         # If file exists, use first row as columns
         if not self.is_empty:
             self.format_open(self.fp)
@@ -120,7 +139,6 @@ class WriteXLSX(WriteOnlySpreadsheet, ODSFile):
         for colname,value in datarowdict.items():
             pos = self.field2col[colname]
             outrow[pos] = str(value) if value else ""
-        row = Row()
         self.format_add_row(outrow)
         self.save() # Saving after each insert if quite heavy
 
@@ -137,6 +155,7 @@ class WriteXLSX(WriteOnlySpreadsheet, ODSFile):
         if not self._saved: log.warning(f"Closing file {self.filename} without saving first.")
         if self.wb: self.wb = None
         self._opened = False
+        self.field2col = {} # Maps column name to column number
 
 class rowIterator:
     """Startrow is 0-indexed (first row = row 0)"""
@@ -196,7 +215,7 @@ class ReadODS(ReadOnlySpreadsheet, ODSFile):
 
 if __name__ == '__main__':
     testfile = "test.ods"
-    t = WriteXLSX( testfile )
+    t = WriteODS( testfile )
     t.open(["col_foo", "col_bar"])
     t.add_line_from_dict({"col_foo":"test1", "col_bar":"test2"}, on_new_key=new_column_action.INSERT)
     t.add_line_from_dict({"col_foo":"testA", "col_bar":"testB"}, on_new_key=new_column_action.INSERT)
