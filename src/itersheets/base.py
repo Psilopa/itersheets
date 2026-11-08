@@ -5,8 +5,8 @@ from pathlib import Path
 import logging, re, json
 
 # My own modules
-#from .mytyping import * # For type checking tools
-from errors import sheetError
+from .mytyping import * # For type checking tools
+from .errors import sheetError
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
 

@@ -7,9 +7,9 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
 
 # My own modules
-from errors import sheetError
-from base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
-#from .mytyping import * # For type checking tools
+from .errors import sheetError
+from .base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
+from .mytyping import * # For type checking tools
 
 BOLDFONT = Font(bold=True)
 SUFFIXES = [".xlsx", "xlsx"]
@@ -50,13 +50,13 @@ class XLSXFile():
     def format_map_fields_to_columns(self:Self, fields:type_fields):
         return { k:v for k,v in zip(fields, range(len(fields))) } 
     
-    def format_add_row(self:Self, values: Sequence):
+    def format_add_row( self:Self, values:Sequence ):
         assert self.ws, "self.ws sould exist when we try to addrow()."
-        self.ws.append( values )
+        self.ws.append( tuple(values) )
 
     def format_get_row_values(self:Self, nrow:int) -> tuple:
         assert self.ws, "self.ws sould exist when we try to get row values."
-        return tuple(x.value for x in ws[nrow+1:nrow+1])
+        return tuple(x.value for x in self.ws[nrow+1:nrow+1])
 
     def format_set_row_values(self:Self, nrow:int, values:Sequence) -> None:
         max_col = len(values)
@@ -71,9 +71,9 @@ class XLSXFile():
 
     def format_save(self:Self, filepath:Path) -> None:
         # TODO: ERROR HANDLING ON BAD PATH
-        self.wb.save(filepath)
+        if self.wb: self.wb.save(filepath)
 
-    def format_close(self:Self, filepath:Path=None) -> None:
+    def format_close(self:Self, filepath:Path|None=None) -> None:
         if self.wb and filepath:
             self.format_save(filepath)
         if self.wb:
@@ -146,7 +146,7 @@ class WriteXLSX(WriteOnlySpreadsheet, XLSXFile):
     def close(self, save:bool=True):
         if save: self.save()
         if not self._saved: log.warning(f"Closing file {self.filename} without saving first.")
-        self.wb.close()
+        if self.wb: self.wb.close()
         self._opened = False
         self.field2col = {} # Maps column name to column number
 
@@ -164,6 +164,7 @@ class ReadXLSX(ReadOnlySpreadsheet, XLSXFile):
 
     def open(self:Self) -> None:
         self.format_open(self.fp)
+        assert self.ws, "self.ws sould exist when we try to read values from it."
         self.iter = self.ws.values
         self._fields = next(self.iter) # Grab 1st row and use it as field names
 
