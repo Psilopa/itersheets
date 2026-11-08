@@ -34,23 +34,27 @@ class ODSFile():
         tmpwb = None 
         return rv
 
-    def open_ods(self, fieldnames:Sequence[str]=tuple()):
+    def open_ods(self:Self, fieldnames:type_fields = tuple() ):
         self.wb = Document(self.fp)
         self.table = self.wb.body.tables[0]
         if not self.table:
             raise sheetError(f"Could not find sheet {sheetname} in table {self.fp}")
 
-    def create_ods(self, fieldnames:Sequence[str]=tuple()):
+    def create_ods(self:Self, fieldnames:type_fields = tuple() ):
         self.wb = Document("spreadsheet")
         self.wb.body.clear()
         self.table = Table(name="Table1")
         self.wb.body.append(self.table)
 
-    def map_fields_to_columns(self,fields):
+    def map_fields_to_columns(self:Self, fields:type_fields):
         return { k:v for k,v in zip(fields, range(len(fields))) } 
 
-    def get_row_values(self,nrow):
+    def get_row_values(self:Self, nrow:int) -> tuple:
+        return tuple( self.table.get_row(nrow).get_values() ) 
+
+    def ods_save(self:Self) -> None:
         return self.table.get_row(nrow).get_values() 
+    
     
 
 class WriteXLSX(WriteOnlySpreadsheet, ODSFile): 
@@ -108,7 +112,7 @@ class WriteXLSX(WriteOnlySpreadsheet, ODSFile):
         self._addrow(outrow)
         self.save() # Saving after each insert if quite heavy
 
-    def _addrow(self,values):
+    def _addrow(self:Self,values: Sequence):
         row = Row()
         for n in range(len(values)):
             row.set_value(n, values[n])
@@ -124,7 +128,7 @@ class WriteXLSX(WriteOnlySpreadsheet, ODSFile):
             self.table.set_row(0, row)
         self.save() 
 
-    def close(self, save:bool=True):
+    def close(self, save:bool = True) -> None:
         if save: self.save()
         if not self._saved: log.warning(f"Closing file {self.filename} without saving first.")
         if self.wb: self.wb = None
@@ -132,15 +136,15 @@ class WriteXLSX(WriteOnlySpreadsheet, ODSFile):
 
 class rowIterator:
     """Startrow is 0-indexed (first row = row 0)"""
-    def __init__(self, table, func, startrow = 1):
+    def __init__(self:Self, table, func:Callable, startrow:int = 1):
         self.table = table
         self.func = func
         self.startrow = 1 
         self.maxlen = int(table.size[1]) - 1
-    def __iter__(self):
+    def __iter__(self:Self):
         self.nrow = self.startrow
         return self
-    def __next__(self):
+    def __next__(self:Self):
         if self.nrow <= self.maxlen:
             rv = self.func(self.nrow)
             self.nrow += 1
@@ -183,7 +187,7 @@ class ReadODS(ReadOnlySpreadsheet, ODSFile):
     def fields(self:Self)-> tuple[str,...]: return tuple(self._fields)
 
     @fields.setter
-    def fields(self:Self, val) -> None:
+    def fields(self:Self, val:Sequence) -> None:
         self._fields = tuple(unique(val))
 
 if __name__ == '__main__':
