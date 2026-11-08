@@ -145,20 +145,3 @@ class ReaderCSV(ReadOnlySpreadsheet):
         rv = self.reader.fieldnames
         return tuple(self.reader.fieldnames or []) # Make sure the return value is a list, self.reader.fieldnames can return None
     # Has no setter: we are reading only...
-
-if __name__ == '__main__':
-    t = WriteCSV("test.csv")
-    print("First open")
-    t.open(["col_foo", "col_bar"])
-    print("Filename is", t.filename)
-    t.add_line_from_dict({"col_foo":"test1", "col_bar":"test2"})
-    print("fields = ", t.fields)
-    t.add_line_from_dict({"col_foo":"testA", "col_bar":"testB"})
-    t.add_line_from_dict({"col_foo":"testB", "col_bar":"testB", "col_baz":"testB"})
-    t.add_line_from_dict({"col_foo":"testB",  "col_baz":"testB"})
-    t.save()
-    t = ReadCSV("test.csv")
-    t.open()
-    for d in t.next():
-        print(repr(d))
-    t.close()

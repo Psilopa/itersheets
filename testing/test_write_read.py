@@ -7,12 +7,12 @@ def _test_write_read(tclasses, testfile, tformat, on_new_key):
     print(f"TEST Writing {tformat}.")
     t = writeclass( testfile )
     t.open(["col_foo", "col_bar"])
-    t.add_line_from_dict({"col_foo":"test1", "col_bar":"test2"}, on_new_key=on_new_key)
-    t.add_line_from_dict({"col_foo":"testA", "col_bar":"testB"}, on_new_key=on_new_key)
-    t.add_line_from_dict({"col_foo":"testC", "col_bar":"testC",
+    t.add_row_from_dict({"col_foo":"test1", "col_bar":"test2"}, on_new_key=on_new_key)
+    t.add_row_from_dict({"col_foo":"testA", "col_bar":"testB"}, on_new_key=on_new_key)
+    t.add_row_from_dict({"col_foo":"testC", "col_bar":"testC",
                           "col_baz":"testC"}, on_new_key=on_new_key)
     json = '{"col_foo":"jsonD",  "col_baz":"jsonE"}'
-    t.add_line_from_json(json, on_new_key=on_new_key)
+    t.add_row_from_json(json, on_new_key=on_new_key)
     t.save()
     t.close()
     # Reading

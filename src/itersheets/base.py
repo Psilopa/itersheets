@@ -2,7 +2,7 @@
 # STDlib
 from abc import ABC, abstractmethod
 from pathlib import Path
-import logging, re, json
+import logging, json
 
 # My own modules
 #from .mytyping import * # For type checking tools
@@ -13,6 +13,7 @@ log = logging.getLogger() # Set from main script if fancy logging is required.
 class new_column_action:
     NEWFILE = "newfile" # Only supported for CSV at the moment
     INSERT = "insert" # Only supported for XLS at the moment
+#   EXCEPTION = "reject" # TODO- not currently supported. Raise a UnknownColumnError ?
 
 def json2printdict(jsondata: str | dict[str,Any] ) -> dict[str,Any]:
     "Converts a string with JSON data or a corresponding dictionary with prettyprinted content."
@@ -114,7 +115,7 @@ class WriteOnlySpreadsheet(Spreadsheet):
         self._saved = False
 
    
-    def add_line_from_dict(self:Self,
+    def add_row_from_dict(self:Self,
                            datarowdict: dict[str,object],
                            on_new_key:str ) -> None:
         """Write a row based on a dictionary of column_header: value items.
@@ -122,7 +123,7 @@ class WriteOnlySpreadsheet(Spreadsheet):
         If the column_header is not included in the existing file structure, raise a ValueError."""
         self.addrow( json2printdict(datarowdict), on_new_key )
         
-    def add_line_from_json(self:Self, datarowdict: dict[str,object],
+    def add_row_from_json(self:Self, datarowdict: dict[str,object],
                            on_new_key:str  ) -> None:
         self.addrow( json2printdict(datarowdict), on_new_key )
 
@@ -144,4 +145,15 @@ class ReadOnlySpreadsheet(Spreadsheet):
     @abstractmethod        
     def open(self:Self) -> None:
         self._opened = True
+
+#    @abstractmethod        
+#    def get_row(self,n:int, func:Callable|None=None, replace_none:str|None=None) -> tuple:
+#        """Get row values as a tuple.
+#
+#        n - int. Row number, starting from 0.
+#        func - if not None, a function that is called for every element
+#        replace_none - None or string. If a string, None values is output are replaced with this value *before* the function func is called.
+#        """
+#        return tuple()
+
 
