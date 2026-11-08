@@ -19,42 +19,44 @@ FORMAT_NAME = "ODS"
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
 
-
-class ODSFile():
-    def _read_header(self:Self) -> tuple:
-        wb = Document(self.fp)
-        assert wb, "wb should exist when we try to read a row in _read_header()."
-        table = wb.body.tables[0]
-        maxlen = 50
-        rv = unique([table.get_row(0).get_value(x) for x in range(0, maxlen)])
-        rv = tuple(x for x in rv if x!=None) # Remove Nones
-        wb = None 
+class ODSFile():    
+    def __init__(self:Self):
+        self.wb = None
+        self.table = None
+        
+    def read_header_values(self:Self) -> tuple:
+        tmpwb = Document(self.fp)
+        assert tmpwb, "wb should exist when we try to read a row in _read_header_values()."
+        tmptable = tmpwb.body.tables[0]
+        maxlen = int(tmptable.size[0])
+        rv = unique([tmptable.get_row(0).get_value(x) for x in range(0, maxlen)])
+#        rv = tuple(x for x in rv if x!=None) # Remove Nones
+        tmpwb = None 
         return rv
 
-    def open_ods(self, fieldnames=tuple()):
+    def open_ods(self, fieldnames:Sequence[str]=tuple()):
         self.wb = Document(self.fp)
         self.table = self.wb.body.tables[0]
         if not self.table:
             raise sheetError(f"Could not find sheet {sheetname} in table {self.fp}")
-        # Map field name to column number (0-based indexing as we do not use this numbering directly in Excel)
-        self.fields = self._read_header() + tuple(fieldnames)
-        self.field2col = { k:v for k,v in zip(self.fields, range(len(self.fields))) } 
 
-    def create_ods(self, fieldnames=tuple()):
+    def create_ods(self, fieldnames:Sequence[str]=tuple()):
         self.wb = Document("spreadsheet")
         self.wb.body.clear()
         self.table = Table(name="Table1")
         self.wb.body.append(self.table)
-        # Map field name to column number (0-based indexing as we do not use this numbering directly in Excel)
-        self.fields = fieldnames
-        self.field2col = { k:v for k,v in zip(self.fields, range(len(self.fields))) } 
 
+    def map_fields_to_columns(self,fields):
+        return { k:v for k,v in zip(fields, range(len(fields))) } 
 
+    def get_row_values(self,nrow):
+        return self.table.get_row(nrow).get_values() 
+    
 
 class WriteXLSX(WriteOnlySpreadsheet, ODSFile): 
     def __init__(self:Self, filename: str|Path): 
-        super().__init__(filename)
-        self.wb = None
+        WriteOnlySpreadsheet.__init__(self,filename)
+        ODSFile.__init__(self) # This convenience class keeping ODS-specific loaders.
         self.field2col = {} # Maps column name to column number
         if self.fp.suffix.lower() not in SUFFIXES: 
             raise sheetError(f"{FORMAT_NAME} output file name must end in {SUFFIXES[0]}. {self.fp} fails")
@@ -65,8 +67,12 @@ class WriteXLSX(WriteOnlySpreadsheet, ODSFile):
         # If file exists, use first row as columns
         if not self.is_empty:
             self.open_ods(fieldnames)
+            self.fields = self.read_header_values() + tuple(fieldnames)
         else:
             self.create_ods(fieldnames)
+            self.fields = fieldnames
+        # Map field name to column number (0-based indexing as we do not use this numbering directly in Excel)
+        self.field2col = self.map_fields_to_columns(self.fields)
         self._opened = True
 
     def save(self:Self) -> None:
@@ -109,16 +115,14 @@ class WriteXLSX(WriteOnlySpreadsheet, ODSFile):
         self.table.append(row)
 
     def writeheader(self:Self) -> None:
-        # TODO: THIS SHOULD ALWAYS ACCESS LINE 1
-        if not self.exists:
+        assert self.wb, "self.wb sould exist when we try to writeheader()."
+        if self.is_empty: # E,pty file, we need to add a row 
             self._addrow(self.fields)
-            self.save() # Saving after each insert if quite heavy
-        else:
+        else: # Update existing header line
             row = self.table.get_row(0)
             row.set_values(self.fields)
             self.table.set_row(0, row)
-        # TODO: UPDATING ROW 0 IF IT DID ALREADY EXIST
-        assert self.wb, "self.wb sould exist when we try to writeheader()."
+        self.save() 
 
     def close(self, save:bool=True):
         if save: self.save()
@@ -127,43 +131,53 @@ class WriteXLSX(WriteOnlySpreadsheet, ODSFile):
         self._opened = False
 
 class rowIterator:
-    def __init__(self, table):
+    """Startrow is 0-indexed (first row = row 0)"""
+    def __init__(self, table, func, startrow = 1):
         self.table = table
-        self.maxlen = 50
+        self.func = func
+        self.startrow = 1 
+        self.maxlen = int(table.size[1]) - 1
     def __iter__(self):
-        self.nrow = 1 # Start from line 2
+        self.nrow = self.startrow
         return self
     def __next__(self):
         if self.nrow <= self.maxlen:
-            rv = self.table.get_row(self.nrow)
+            rv = self.func(self.nrow)
             self.nrow += 1
-            return rv.get_values()        
+            return rv
         else:
           raise StopIteration
 
 class ReadODS(ReadOnlySpreadsheet, ODSFile):
-    # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def __init__(self:Self, filename: str|Path): 
         super().__init__(filename)
-        self.wb = None
-        self.table = None
+        self._reset_variables()
         if self.fp.suffix.lower() not in SUFFIXES: 
             raise sheetError(f"{FORMAT_NAME} input file name must end in {SUFFIXES[0]}. {self.fp} fails")
 
+    def _reset_variables(self:Self):
+        self._opened = False
+        self.wb = None
+        self.table = None
+        self.fields = tuple()
+        self.field2col = {  }  # Mapping field name to column number (0-indexed) Set by ODSFile open/create
+
+    # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def open(self:Self) -> None:
         self._opened = False
         if not self.exists:
             raise sheetError(f"Coulf not access file {self.fp}.")
         self.open_ods()
+        self.iter = iter(rowIterator(self.table, self.get_row_values))        
+        self.fields = self.get_row_values(0)       
         self._opened = True
-        self.iter = iter(rowIterator(self.table))        
 
-    def next(self:Self) :
+    def next(self:Self) -> Iterator[tuple]:
         return self.iter
         
     def close(self:Self) -> None:
         if self.wb: self.wb = None
-        self._opened = False
+        self._reset_variables()
         
     @property
     def fields(self:Self)-> tuple[str,...]: return tuple(self._fields)
@@ -184,6 +198,7 @@ if __name__ == '__main__':
     t.close()
     t = ReadODS( testfile )
     t.open()
+    print("Fields = ", t.fields)
     for d in t.next():
         print(tuple(d))
     t.close()
