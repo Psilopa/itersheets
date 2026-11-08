@@ -3,9 +3,9 @@ import logging, csv, re
 from pathlib import Path
 
 # My own modules
-from .errors import sheetError
-from .base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
-from .mytyping import * # For type checking tools
+from errors import sheetError
+from base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
+from mytyping import * # For type checking tools
 
 SUFFIXES = [".csv", "csv"]
 class default:
@@ -23,7 +23,7 @@ def sanitize_filename(text:str) -> str:
     dirty = "".join(["\\[/\\?%*:|\"<>0x7F0x00-0x1F]", chr(0x1F) * 15])
     return re.sub(text,"-",dirty) # Replace all chars in dirty with -.
 
-class WriteCSV(WriteOnlySpreadsheet): 
+class WriterCSV(WriteOnlySpreadsheet): 
     # TODO: Convert to use the DictWriter class (needs data-pre-work to handle duplicate 'keys')
     """ """
     def __init__(self:Self, filename: str|Path): 
@@ -111,7 +111,7 @@ class WriteCSV(WriteOnlySpreadsheet):
         self._saved = True
 
 
-class ReadCSV(ReadOnlySpreadsheet):
+class ReaderCSV(ReadOnlySpreadsheet):
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def __init__(self:Self,
                  filename: str|Path,
