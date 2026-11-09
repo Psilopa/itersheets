@@ -1,8 +1,15 @@
 # Itersheets
-Reading and writing of spreadsheets with a dictionary mapping approach. A file is assumed to have unique values in on the 1st line.
-The available functionality is limited and most restriced to basic data reading and writing: the main purpose of this module is to allow easy cross-format support for these basic tasks.
+Reading and writing of basic tabular data line-line line with an uniform API for CVS, ODS and XLSX files.
 
-Targets multiple formats. CSV XLSX, and ODS are currently supported. 
+As the name suggests, all row operations are done in one sweep row-by-row. No random access is allowed.
+
+**Work in progress for now**! The current version assumes files have unique values in on the 1st line (which allows output as dictionaries). Future versions can hopefully release this condition or make it optional.
+
+# TODO
+- Allow users to specify first line of data
+- ? Allow multiple header lines, if >1, join column headers as a tuple for dictionary access (header_row1, header_row2): data
+- Support CSV in-place line addition
+- Data type validators or converters based on column header?
 
 # Installation
 For now, you have to build your own Python package if you want to use this as a simple import. 
