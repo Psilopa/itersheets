@@ -91,7 +91,9 @@ class WriterBase(WriteOnlySpreadsheet):
 
 #------------------ EXCEL SPECIFIC STUFF -------------
 class WriterXLSX(WriterBase, XLSXFile): 
-    pass
+        WriterBase.__init__(self,filename)
+        XLSXFile.__init__(self)
 #------------------ ODS SPECIFIC STUFF -------------
 class WriterODS(WriterBase, ODSFile): 
-    pass
+        WriterBase.__init__(self,filename)
+        ODSFile.__init__(self)
