@@ -7,7 +7,7 @@ from .errors import sheetError
 from .base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
 from .mytyping import * # For type checking tools
 
-SUFFIXES = [".csv", "csv"]
+SUFFIXES = [".csv"]
 class default:
     DIALECT = csv.excel()
     QUOTING = csv.QUOTE_STRINGS
@@ -135,7 +135,7 @@ class ReaderCSV(ReadOnlySpreadsheet):
                                      dialect = self.dialect,
 #                                     restval="" # Value if cell is empty
                                      )
-        self._fields = next(self) # Base class property uses this
+        self.fields = next(self) # Base class property uses this
         self._opened = True
 
     def __next__(self:Self):

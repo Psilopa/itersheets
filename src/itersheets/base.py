@@ -43,7 +43,7 @@ class Spreadsheet(ABC):
         self.file = None
         self._opened = False
         self._fields = tuple()
-        self._currentfields = set()
+        self._fieldset = set(self._fields)
 
     @property
     def filename(self:Self) -> Path: return self.fp
@@ -64,6 +64,11 @@ class Spreadsheet(ABC):
     @property
     def fields(self:Self)-> tuple[str,...]: return self._fields
 
+    @fields.setter
+    def fields(self:Self, val) -> None:
+        self._fields = tuple(unique(val))
+        self._fieldset = set(self._fields)
+
     @abstractmethod        
     def open(self:Self, fieldnames: Sequence[str] = []) -> None:
         self._opened = True
@@ -75,11 +80,11 @@ class Spreadsheet(ABC):
 
     def has_columns(self:Self, fields:Collection[str]) -> bool:
         "True is spreadsheet has a field for each value in fields."
-        return self._currentfields.issuperset( set(fields) )
+        return self._fieldset.issuperset( set(fields) )
 
     def lacks_columns(self:Self, fields:Collection[str]) -> set[str]:
         "Returns a set of field names that are missing from the spreadsheet."
-        return set(fields).difference( self._currentfields )
+        return set(fields).difference( self._fieldset )
 
 # ------------ WRITE ONLY SPREADSHEETS -------------    
 class WriteOnlySpreadsheet(Spreadsheet):
@@ -89,14 +94,6 @@ class WriteOnlySpreadsheet(Spreadsheet):
 
     @property
     def is_saved(self:Self) -> bool: return self._saved
-
-    @property
-    def fields(self:Self)-> tuple[str,...]: return self._fields
-
-    @fields.setter
-    def fields(self:Self, val) -> None:
-        self._fields = tuple(unique(val))
-        self._currentfields = set(self._fields)
 
     # Override parent class methods in child classes
     def close(self:Self, save:bool=True) -> None:

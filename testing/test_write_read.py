@@ -77,3 +77,4 @@ if __name__ == '__main__':
 #    test_write(itersheets.WriterCSV, "test.csv", "CSV", newfile)
     test_read( itersheets.ReaderCSV, "test.csv")
     test_read_dict( itersheets.ReaderCSV, "test.csv")
+    test_properties( itersheets.ReaderCSV, "test.csv")
