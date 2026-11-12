@@ -12,12 +12,11 @@ class ReaderBase(ReadOnlySpreadsheet):
     def __init__(self:Self, filename: str|Path): 
         super().__init__(filename)
         self._reset_variables()
-        if self.fp.suffix.lower() not in self.SUFFIXES: 
-            raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
 
     def _reset_variables(self:Self):
-        self._fields = tuple()
         self._opened = False
+        self.fields = tuple()
+        self.file = None
 
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def open(self:Self) -> None:
@@ -25,19 +24,16 @@ class ReaderBase(ReadOnlySpreadsheet):
         if not self.exists:
             raise sheetError(f"Coulf not access file {self.fp}.")
         self.format_open(self.fp)
-        self.iter = self.iterator_values()
-        self._fields = next(self.iter) # Grab 1st row and use it as field names
+        self.iter = self.value_iterator() 
+        self.fields = next(self.iter) # Grab 1st row and use it as field names
         self._opened = True
 
-    def next(self:Self) -> Iterator[tuple]:        
-        return self.iter or tuple(tuple())# Return next row from the iterator or an empty tuple
+    def __next__(self:Self):
+        return next(self.iter) # Return next row from the iterator or an empty tuple
 
     def close(self:Self) -> None:
         self.format_close()
         self._reset_variables()
-        
-    @property
-    def fields(self:Self)-> tuple[str,...]: return tuple(self._fields)
 
 #------------------ EXCEL SPECIFIC STUFF -------------
 class ReaderXLSX(ReaderBase, XLSXFile):
@@ -55,4 +51,4 @@ class ReaderODS(ReaderBase, ODSFile):
         # but in XLSX, only once?
         # Resulting in an off-by-1 difference
         # So we set fields manually here and jkods.rowIterator starts from row 2
-        self._fields = self.format_get_row_values(0)       
+        self.fields = self.format_get_row_values(0)       

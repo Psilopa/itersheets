@@ -15,11 +15,13 @@ def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s))
 log = logging.getLogger() # Set from main script if fancy logging is required.
 
 class ODSFile():    
-    SUFFIXES = [".ods", "ods"]
     FORMAT_NAME = "ODS"
+    SUFFIXES = [".ods"]
     BOLDFONT = None #Font(bold=True)
     def __init__(self:Self):
         self.formar_reset()
+        if self.SUFFIXES and self.fp.suffix.lower() not in self.SUFFIXES: 
+            raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
 
     def formar_reset(self:Self):
         self.wb = None
@@ -84,7 +86,7 @@ class ODSFile():
             self.format_save(filepath)
         self.formar_reset()
 
-    def iterator_values(self:Self):
+    def value_iterator(self:Self):
         return iter( rowIterator( self.format_get_row_values,
                                   int(self.table.size[1]) - 1,
                                   startrow = 1
@@ -110,40 +112,5 @@ class rowIterator:
           raise StopIteration
 
 
-class ReadODS(ReadOnlySpreadsheet, ODSFile):
-    def __init__(self:Self, filename: str|Path): 
-        super().__init__(filename)
-        self._reset_variables()
-        if self.fp.suffix.lower() not in SUFFIXES: 
-            raise sheetError(f"{FORMAT_NAME} input file name must end in {SUFFIXES[0]}. {self.fp} fails")
-
-    def _reset_variables(self:Self):
-        self._opened = False
-        self.wb = None
-        self.table = None
-        self.fields = tuple()
-        self.field2col = {  }  # Mapping field name to column number (0-indexed) Set by ODSFile open/create
-
-    # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
-    def open(self:Self) -> None:
-        self._opened = False
-        if not self.exists:
-            raise sheetError(f"Coulf not access file {self.fp}.")
-        self.format_open(self.fp)
-        self.iter = self.iterator_values() 
-        self.fields = self.format_get_row_values(0)       
-        self._opened = True
-
-    def next(self:Self) -> Iterator[tuple]:
-        return self.iter
         
-    def close(self:Self) -> None:
-        if self.wb: self.wb = None
-        self._reset_variables()
-        
-    @property
-    def fields(self:Self)-> tuple[str,...]: return tuple(self._fields)
 
-    @fields.setter
-    def fields(self:Self, val:Sequence) -> None:
-        self._fields = tuple(unique(val))

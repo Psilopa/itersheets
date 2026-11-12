@@ -15,10 +15,12 @@ log = logging.getLogger() # Set from main script if fancy logging is required.
 
 class XLSXFile():
     FORMAT_NAME = "Excel"
-    SUFFIXES = [".xlsx", "xlsx"]
+    SUFFIXES = [".xlsx"]
     BOLDFONT = Font(bold=True)
     def __init__(self:Self):
         self._format_reset()
+        if self.SUFFIXES and self.fp.suffix.lower() not in self.SUFFIXES: 
+            raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
 
     def _format_reset(self:Self):
         self.wb = None
@@ -79,7 +81,7 @@ class XLSXFile():
             self.wb.close()
         self._format_reset()
 
-    def iterator_values(self:Self):
+    def value_iterator(self:Self):
         assert self.ws, "self.ws sould exist when we try to read values from it."
         return self.ws.values
 

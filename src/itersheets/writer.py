@@ -91,9 +91,11 @@ class WriterBase(WriteOnlySpreadsheet):
 
 #------------------ EXCEL SPECIFIC STUFF -------------
 class WriterXLSX(WriterBase, XLSXFile): 
+    def __init__(self:Self, filename: str|Path): 
         WriterBase.__init__(self,filename)
         XLSXFile.__init__(self)
 #------------------ ODS SPECIFIC STUFF -------------
 class WriterODS(WriterBase, ODSFile): 
+    def __init__(self:Self, filename: str|Path): 
         WriterBase.__init__(self,filename)
         ODSFile.__init__(self)
