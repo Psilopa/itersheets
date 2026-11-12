@@ -24,7 +24,7 @@ class ReaderBase(ReadOnlySpreadsheet):
         if not self.exists:
             raise sheetError(f"Coulf not access file {self.fp}.")
         self.format_open(self.fp)
-        self.iter = self.value_iterator() 
+        self.iter = self.value_iterator() # BAD DESIGN: THIS COMES FROM THE XFILE CHILD
         self.fields = next(self.iter) # Grab 1st row and use it as field names
         self._opened = True
 
@@ -45,10 +45,4 @@ class ReaderODS(ReaderBase, ODSFile):
     def __init__(self:Self, filename: str|Path): 
         ReaderBase.__init__(self,filename)
         XLSXFile.__init__(self)
-    def open(self:Self) -> None:
-        ReaderBase.open(self)
-        # HACK: for some reaso, the iter in ODS gets started 2,
-        # but in XLSX, only once?
-        # Resulting in an off-by-1 difference
-        # So we set fields manually here and jkods.rowIterator starts from row 2
-        self.fields = self.format_get_row_values(0)       
+

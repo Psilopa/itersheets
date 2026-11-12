@@ -25,7 +25,7 @@ def test_read(readclass, testfile):
     t = readclass( testfile )
     t.open()
     print(f"Header fields in the {tformat} file:", t.fields)
-    for d in t:
+    for d in t.tuplerows():
         # Convert everything to strings and None to ""
         print("row = ", d)
         d = tuple(str(x) if x else "" for x in d)
@@ -49,7 +49,8 @@ def test_read_dict(readclass, testfile):
 
 def test_properties(readclass, testfile):
     print(f"---------------TESTING  .............:")
-    print("Properties in  {tformat}")
+    tformat = Path(testfile).suffix.strip(".")
+    print(f"Properties in  {tformat}")
     # Reading
     tformat = Path(testfile).suffix.strip(".")
     t = readclass( testfile )
@@ -74,11 +75,14 @@ if __name__ == '__main__':
 #    test_write(itersheets.WriterXLSX, "test.xlsx", "Excel", insert)
 #    test_write(itersheets.WriterODS, "test.ods", "ODS", insert)
 #    test_write(itersheets.WriterCSV, "test.csv", "CSV", newfile)
-#    test_read( itersheets.ReaderCSV, "test.csv")
-#    test_read_dict( itersheets.ReaderCSV, "test.csv")
-#    test_properties( itersheets.ReaderCSV, "test.csv")
-#    test_read( itersheets.ReaderXLSX, "test.xlsx")
-#    test_read_dict( itersheets.ReaderXLSX, "test.xlsx")
+    test_read( itersheets.ReaderCSV, "test.csv")
+    test_read_dict( itersheets.ReaderCSV, "test.csv")
+    test_properties( itersheets.ReaderCSV, "test.csv")
+    test_read( itersheets.ReaderXLSX, "test.xlsx")
+    test_read_dict( itersheets.ReaderXLSX, "test.xlsx")
     test_properties( itersheets.ReaderXLSX, "test.xlsx")
     test_read( itersheets.ReaderXLSX, "test.xlsx")
     test_read_dict( itersheets.ReaderXLSX, "test.xlsx")
+    test_properties( itersheets.ReaderODS, "test.ods")
+    test_read( itersheets.ReaderODS, "test.ods")
+    test_read_dict( itersheets.ReaderODS, "test.ods")

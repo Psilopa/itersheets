@@ -2,7 +2,7 @@
 # STDlib
 from abc import ABC, abstractmethod
 from pathlib import Path
-import logging, json
+import logging, json, itertools
 
 # My own modules
 from .mytyping import * # For type checking tools
@@ -152,8 +152,9 @@ class ReadOnlySpreadsheet(Spreadsheet):
         """An iterator returning rows as a dictionary of column_header: cell value pairs.
 
         Only available if row 1 has unique column names.
-        """        
-        for row in self: yield {k:v for k,v in zip(self.fields,row)}
+        """
+        # itertools.zip_longest() pads the shorter iterable with Nones
+        for row in self: yield {k:v for k,v in itertools.zip_longest(self.fields,row)}
                     
     def tuplerows(self:Self):
         "For consistency with dictrows, returns rows as tuples"

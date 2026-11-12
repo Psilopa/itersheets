@@ -19,11 +19,11 @@ class ODSFile():
     SUFFIXES = [".ods"]
     BOLDFONT = None #Font(bold=True)
     def __init__(self:Self):
-        self.formar_reset()
+        self._format_reset()
         if self.SUFFIXES and self.fp.suffix.lower() not in self.SUFFIXES: 
             raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
 
-    def formar_reset(self:Self):
+    def _format_reset(self:Self):
         self.wb = None
         self.table = None
         
@@ -84,12 +84,12 @@ class ODSFile():
     def format_close(self:Self, filepath:Path|None=None) -> None:
         if self.wb and filepath:
             self.format_save(filepath)
-        self.formar_reset()
+        self._format_reset()
 
     def value_iterator(self:Self):
         return iter( rowIterator( self.format_get_row_values,
                                   int(self.table.size[1]) - 1,
-                                  startrow = 1
+                                  startrow = 0
                                   )
                     )
 
