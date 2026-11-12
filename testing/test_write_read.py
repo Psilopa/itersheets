@@ -28,7 +28,7 @@ def test_read(readclass, testfile):
     for d in t.tuplerows():
         # Convert everything to strings and None to ""
         print("row = ", d)
-        d = tuple(str(x) if x else "" for x in d)
+#        d = tuple(str(x) if x else "" for x in d)
     t.close()
     print("END OF TEST\n")
 
@@ -43,7 +43,7 @@ def test_read_dict(readclass, testfile):
     for d in t.dictrows():
         # Convert everything to strings and None to ""
         print("row = ", d)
-        d = tuple(str(x) if x else "" for x in d)
+
     t.close()
     print("END OF TEST\n")
 
