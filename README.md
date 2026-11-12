@@ -35,6 +35,17 @@ t.save()
 t.close()
 ```
 
+## Reading data
+
+```
+t = itersheets.ReaderCSV( "test.xlsx" )
+t.open()
+print(f"Header fields (1st row values):", t.fields)
+for d in t.dictrows():
+    print("row as dictionary = ", d)
+t.close()
+```
+
 ## Accessing file and file content properties
 
 ```
