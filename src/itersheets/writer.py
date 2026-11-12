@@ -85,7 +85,7 @@ class WriterBase(WriteOnlySpreadsheet):
         # Do not save just for a header, wait for a data row
 
     def close(self, save:bool = True) -> None:
-        if save and self.wb: self.save()
+        if save: self.save()
         if not self._saved: log.warning(f"Closing file {self.filename} without saving first.")
         self._reset()
 
