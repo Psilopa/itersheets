@@ -85,13 +85,15 @@ class WriterBase(WriteOnlySpreadsheet):
         # Do not save just for a header, wait for a data row
 
     def close(self, save:bool = True) -> None:
-        if save and self.wb: self.save()
+        if save: self.save()
         if not self._saved: log.warning(f"Closing file {self.filename} without saving first.")
         self._reset()
 
 #------------------ EXCEL SPECIFIC STUFF -------------
 class WriterXLSX(WriterBase, XLSXFile): 
-    pass
+        WriterBase.__init__(self,filename)
+        XLSXFile.__init__(self)
 #------------------ ODS SPECIFIC STUFF -------------
 class WriterODS(WriterBase, ODSFile): 
-    pass
+        WriterBase.__init__(self,filename)
+        ODSFile.__init__(self)
