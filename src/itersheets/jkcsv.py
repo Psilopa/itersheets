@@ -130,18 +130,14 @@ class ReaderCSV(ReadOnlySpreadsheet):
                                     newline = "",
                                     errors = default.ENCODING_ERRORS
                                     )
-        self.reader = csv.DictReader(self.file,
+        self.reader = csv.reader(self.file,
                                     delimiter = ",",
                                      dialect = self.dialect,
-                                     restval="" # Value if cell is empty
+#                                     restval="" # Value if cell is empty
                                      )
+        self._fields = next(self) # Base class property uses this
         self._opened = True
 
-    def next(self:Self) -> csv.DictReader[str]: 
-        return self.reader # Next in sequence as a dictionary
+    def __next__(self:Self):
+        return next(self.reader)
 
-    @property
-    def fields(self:Self) -> tuple[str,...]:
-        rv = self.reader.fieldnames
-        return tuple(self.reader.fieldnames or []) # Make sure the return value is a list, self.reader.fieldnames can return None
-    # Has no setter: we are reading only...

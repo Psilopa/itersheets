@@ -5,7 +5,7 @@ from pathlib import Path
 import logging, json
 
 # My own modules
-#from .mytyping import * # For type checking tools
+from .mytyping import * # For type checking tools
 from .errors import sheetError
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
@@ -137,23 +137,29 @@ class ReadOnlySpreadsheet(Spreadsheet):
     def __init__(self:Self, filename: str|Path) :
         super().__init__(filename)
 
-    # Iterator approach
-    @abstractmethod        
-    def next(self:Self) -> Iterable[str]: 
-        return iter([])
-
     @abstractmethod        
     def open(self:Self) -> None:
         self._opened = True
 
-#    @abstractmethod        
-#    def get_row(self,n:int, func:Callable|None=None, replace_none:str|None=None) -> tuple:
-#        """Get row values as a tuple.
-#
-#        n - int. Row number, starting from 0.
-#        func - if not None, a function that is called for every element
-#        replace_none - None or string. If a string, None values is output are replaced with this value *before* the function func is called.
-#        """
-#        return tuple()
+    # Iteration methods
+    def __iter__(self):
+        "Should set up a starting point for iteration"
+        return self
+
+    @abstractmethod        
+    def __next__(self:Self):
+        "Next row as a list"
+        pass
+
+    def dictrows(self:Self):
+        """An iterator returning rows as a dictionary of column_header: cell value pairs.
+
+        Only available if row 1 has unique column names.
+        """        
+        for row in self: yield {k:v for k,v in zip(self.fields,row)}
+                    
+    def tuplerows(self:Self):
+        "For consistency with dictrows, returns rows as tuples"
+        for row in self: yield tuple(row)
 
 

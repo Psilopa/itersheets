@@ -41,9 +41,14 @@ class ReaderBase(ReadOnlySpreadsheet):
 
 #------------------ EXCEL SPECIFIC STUFF -------------
 class ReaderXLSX(ReaderBase, XLSXFile):
-    pass
+    def __init__(self:Self, filename: str|Path): 
+        ReaderBase.__init__(self,filename)
+        XLSXFile.__init__(self)
 
 class ReaderODS(ReaderBase, ODSFile):
+    def __init__(self:Self, filename: str|Path): 
+        ReaderBase.__init__(self,filename)
+        XLSXFile.__init__(self)
     def open(self:Self) -> None:
         ReaderBase.open(self)
         # HACK: for some reaso, the iter in ODS gets started 2,
