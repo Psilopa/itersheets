@@ -3,15 +3,16 @@ from itersheets import itersheets
 from pathlib import Path
 import pytest
 
-testfile = "test.csv"
+#@pytest.mark.parametrize("test_input", [itersheets.ReaderCSV])
 class TestPropsClass:
+    testfile = "test.csv"
     t = itersheets.ReaderCSV( testfile )
     def test_isopen(self):
         assert self.t.is_open == False
         self.t.open()
         assert self.t.is_open == True
     def test_filename(self):
-        assert self.t.filename == Path(testfile)
+        assert self.t.filename == Path(self.testfile)
     def test_exists(self):
         assert self.t.exists == True
     def test_fields(self):
@@ -26,4 +27,3 @@ class TestPropsClass:
         assert self.t.is_open == True
         self.t.close()
         assert self.t.is_open == False
-
