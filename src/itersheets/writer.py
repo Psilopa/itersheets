@@ -37,18 +37,14 @@ class WriterBase(WriteOnlySpreadsheet):
              *args,
              **kwargs:dict) -> None:
         self._reset()
-        print("***** IN WRITER:OPEN*****")
         self.args = args # Keep a copy in case we need to reopen
         self.kwargs = kwargs # Keep a copy in case we need to reopen
             
         # If file exists, use first row as columns
         if self.exists:
-            print("EXISTS")
-            print("FILE PATH = ", self.fp)
             self.format_open(self.fp)
             self.fields = self.format_read_header(self.fp) + tuple(fieldnames)
         else:
-            print("NOT EXISTS")
             self.format_create()
             self.fields = fieldnames
         # Map field name to column number (0-based indexing as we do not use this numbering directly in Excel)
