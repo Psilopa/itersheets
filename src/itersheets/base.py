@@ -10,6 +10,11 @@ from .errors import sheetError
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
 
+class default:
+    ENCODING_ERRORS = "convert"
+    ENCODING = "utf8"
+    NEWLINE = ""
+
 class new_column_action:
     NEWFILE = "newfile" # Only supported for CSV at the moment
     INSERT = "insert" # Only supported for XLS at the moment
@@ -38,7 +43,10 @@ def list2printvalues( mylist: Collection[dict] )-> str:
 def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 
 
 class Spreadsheet(ABC):
-    def __init__(self:Self, filename: str|Path) : 
+    def __init__(self:Self, filename: str|Path, **kwargs:dict ) : 
+        self.encoding = kwargs.get("encoding",default.ENCODING)
+        self.newline = kwargs.get("newline",default.NEWLINE)
+        self.errors = kwargs.get("errors",default.ENCODING_ERRORS)
         self.fp = Path(filename)
         self.file = None
         self._opened = False
@@ -69,10 +77,6 @@ class Spreadsheet(ABC):
         self._fields = tuple(unique(val))
         self._fieldset = set(self._fields)
 
-    @abstractmethod        
-    def open(self:Self, fieldnames: Sequence[str] = []) -> None:
-        self._opened = True
-
     def close(self:Self) -> None:
         "Closes the associated file(s) and marks the Spreadsheet as not open."
         if self.file: self.file.close()
@@ -88,12 +92,19 @@ class Spreadsheet(ABC):
 
 # ------------ WRITE ONLY SPREADSHEETS -------------    
 class WriteOnlySpreadsheet(Spreadsheet):
-    def __init__(self:Self, filename: str|Path) :
-        super().__init__(filename)
+    def __init__(self:Self, filename: str|Path, **kwargs:dict ):
+        super().__init__(filename, **kwargs)
         self._saved = False
 
     @property
     def is_saved(self:Self) -> bool: return self._saved
+
+    @abstractmethod        
+    def open(self:Self,mode,
+             fieldnames:Sequence[str] = tuple(),
+             *args,
+             **kwargs:dict) -> None:
+        self._opened = True
 
     # Override parent class methods in child classes
     def close(self:Self, save:bool=True) -> None:
@@ -131,11 +142,11 @@ class WriteOnlySpreadsheet(Spreadsheet):
         self.fp.replace(newpath)
 # -------------- READING ----------------
 class ReadOnlySpreadsheet(Spreadsheet):
-    def __init__(self:Self, filename: str|Path) :
-        super().__init__(filename)
+    def __init__(self:Self, filename: str|Path, **kwargs:dict) :
+        super().__init__(filename, **kwargs)
 
     @abstractmethod        
-    def open(self:Self) -> None:
+    def open(self:Self, *args, **kwargs) -> None:
         self._opened = True
 
     # Iteration methods

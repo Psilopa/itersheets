@@ -4,15 +4,10 @@ from pathlib import Path
 
 # My own modules
 from .errors import sheetError
-from .base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet
+from .base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet, default
 from .mytyping import * # For type checking tools
 
 SUFFIXES = [".csv"]
-class default:
-    ENCODING_ERRORS = "convert"
-    ENCODING = "utf8"
-    NEWLINE = ""
-
 log = logging.getLogger() # Set from main script if fancy logging is required.
 # These should go to tools (and probably replaced with better tools by someone else)
     
@@ -26,12 +21,9 @@ class WriterCSV(WriteOnlySpreadsheet):
     """ """
     def __init__(self:Self, filename: str|Path, **kwargs:dict ):
         """Accept the same keyword arguments as pathlib.Path.open()."""
+        super().__init__(filename, **kwargs)
         # Need to store these for _read_header()
-        self.encoding = kwargs.get("encoding",default.ENCODING)
-        self.newline = kwargs.get("newline",default.NEWLINE)
-        self.errors = kwargs.get("errors",default.ENCODING_ERRORS)
         self.dialect = kwargs.get("dialect","excel")
-        super().__init__(filename)
         if self.fp.suffix.lower() not in SUFFIXES: 
             raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
@@ -48,7 +40,9 @@ class WriterCSV(WriteOnlySpreadsheet):
         return tuple(fields)
 
     def open(self:Self,mode,
-             fieldnames:Sequence[str] = tuple(), *args, **kwargs:dict) -> None:
+             fieldnames:Sequence[str] = tuple(),
+             *args,
+             **kwargs:dict) -> None:
         """Opens a CSV file for reading. Passes all arguments to csv.DictWriter()."""
         # If file exists, use first row as columns
         if not self.is_empty:
@@ -56,10 +50,11 @@ class WriterCSV(WriteOnlySpreadsheet):
            self.fields = self._read_header() + tuple(fieldnames)
         else:
             self.fields = fieldnames
-        self.file = self.fp.open("a", # Append mode
+        self.file = self.fp.open(mode, # Append mode
+                                 *args,
                                  encoding = self.encoding,
                                  newline = self.newline,
-                                 errors = self.errors
+                                 errors = self.errors                                 
                                  )
         self.writer = csv.DictWriter(self.file,*args,self.fields, **kwargs)
         self._opened = True
@@ -113,10 +108,10 @@ class WriterCSV(WriteOnlySpreadsheet):
 class ReaderCSV(ReadOnlySpreadsheet):
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def __init__(self:Self, filename: str|Path, **kwargs:dict): 
+        super().__init__(filename, **kwargs)
         self.encoding = kwargs.get("encoding",default.ENCODING)
         self.newline = kwargs.get("newline",default.NEWLINE)
         self.errors = kwargs.get("errors",default.ENCODING_ERRORS)
-        super().__init__(filename)
         if self.fp.suffix not in SUFFIXES: 
             raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
 
