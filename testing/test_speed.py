@@ -9,10 +9,11 @@ def test_read():
         t = itersheets.Reader(fp)
         t.open()
         dicts = []
-#        print(f"Header fields (1st row values):", t.fields)
+        print(f"Header fields (1st row values):", t.fields)
         l = 0
         for d in t.dictrows():
-#                print(f"Data file :", d)
+                print(f"Data line :", d)
+#                print(".")
                 dicts.append(d)
                 l += 1
         print(f"Read {l} lines.")
@@ -36,8 +37,8 @@ newrow = (itersheets.new_column_action.NEWFILE,
           itersheets.new_column_action.INSERT,
           itersheets.new_column_action.INSERT)
 fbase = "needscompletion_300k_v1_T"
-do = (False, True, False )  # False
 
+do = (True, False, False )  # False
 for i in range(3):	
 	if do[i]:
 		fformat = formats[i]
@@ -48,7 +49,8 @@ for i in range(3):
 
 # Test writing
 fbase = "out"
-do = (False, False, False )  # False
+
+do = (True, False, False )  # False
 for i in range(3):	
 	if do[i]:
 		fformat = formats[i]

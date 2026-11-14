@@ -31,7 +31,8 @@ class ODSFile():
         tmpwb = Document(filepath)
         assert tmpwb, "wb should exist when we try to read a row in _read_header_values()."
         tmptable = tmpwb.body.tables[0]
-        maxlen = int(tmptable.size[0])
+        maxlen = int(tmptable.width)
+        log.debug(f"ODSFile size reported as {maxlen}.")
         rv = unique([tmptable.get_row(0).get_value(x) for x in range(0, maxlen)])
 #        rv = tuple(x for x in rv if x!=None) # Remove Nones
         tmpwb = None 
@@ -44,6 +45,8 @@ class ODSFile():
         if not self.wb:
             raise sheetError(f"Could not open file {filepath}")
         self.table = self.wb.body.tables[0]
+        self.table.optimize_height()
+        self.table.optimize_width()
 
     def format_create(self:Self):
         self.wb = Document("spreadsheet")
@@ -87,30 +90,8 @@ class ODSFile():
         self._format_reset()
 
     def value_iterator(self:Self):
-        return iter( rowIterator( self.format_get_row_values,
-                                  int(self.table.size[1]) - 1,
-                                  startrow = 0
-                                  )
-                    )
-
-# READING
-class rowIterator:
-    """Startrow is 0-indexed (first row = row 0)"""
-    def __init__(self:Self, func:Callable, maxlen:int, startrow:int = 0):
-        self.func = func
-        self.startrow = startrow 
-        self.maxlen = maxlen
-    def __iter__(self:Self):
-        self.nrow = self.startrow
-        return self
-    def __next__(self:Self):
-        if self.nrow <= self.maxlen:
-            rv = self.func(self.nrow)
-            self.nrow += 1
-            return rv
-        else:
-          raise StopIteration
-
-
-        
-
+        for row in self.table.iter_rows():
+            vals = []
+            for cell in row.iter_cells():
+                vals.append( cell.get_value() )
+            yield tuple(vals)
