@@ -75,7 +75,6 @@ class WriterCSV(WriteOnlySpreadsheet):
             raise sheetError(f"Trying to write into {self.fp} after closing the file.")        
         if self.is_empty:
             self.writeheader()
-        print(datarowdict)
         # NOTE: THIS FAILS IF WE ALLOW EMPTY HEADERS IN THE FUTURE
         # Remove any data with field name = None
         if None in datarowdict: del datarowdict[None]

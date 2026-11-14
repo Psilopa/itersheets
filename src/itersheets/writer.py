@@ -57,8 +57,8 @@ class WriterBase(WriteOnlySpreadsheet):
             raise sheetError(f"Trying to write into {self.fp} after closing the file.")        
         if self.is_empty:
             self.writeheader()
+        if None in datarowdict: del datarowdict[None]
         diff = self.lacks_columns( datarowdict.keys() )
-        diff.remove(None) # Remove None, if there was such a value
         if diff:
             log.warning(f"Missing column(s): {", ".join(diff)}.")
             if on_new_field == new_column_action.INSERT:
