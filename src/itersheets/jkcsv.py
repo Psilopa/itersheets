@@ -9,8 +9,6 @@ from .mytyping import * # For type checking tools
 
 SUFFIXES = [".csv"]
 class default:
-    DIALECT = csv.excel()
-    QUOTING = csv.QUOTE_STRINGS
     ENCODING_ERRORS = "convert"
     ENCODING = "utf8"
     NEWLINE = ""
@@ -26,27 +24,32 @@ def sanitize_filename(text:str) -> str:
 class WriterCSV(WriteOnlySpreadsheet): 
     # TODO: Convert to use the DictWriter class (needs data-pre-work to handle duplicate 'keys')
     """ """
-    def __init__(self:Self, filename: str|Path): 
+    def __init__(self:Self, filename: str|Path, **kwargs:dict ):
+        """Accept the same keyword arguments as pathlib.Path.open()."""
+        # Need to store these for _read_header()
+        self.encoding = kwargs.get("encoding",default.ENCODING)
+        self.newline = kwargs.get("newline",default.NEWLINE)
+        self.errors = kwargs.get("errors",default.ENCODING_ERRORS)
+        self.dialect = kwargs.get("dialect","excel")
         super().__init__(filename)
         if self.fp.suffix.lower() not in SUFFIXES: 
             raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def _read_header(self:Self) -> tuple[str,...]:
         row = []
-        with self.fp.open("r", # Append mode
-                                    encoding = default.ENCODING,
-                                    newline = default.NEWLINE,
-                                    errors = default.ENCODING_ERRORS
-                                    ) as file:
+        with self.fp.open("r", 
+                           encoding = self.encoding,
+                           newline = self.newline,
+                           errors = self.errors
+                           ) as file:
             rdr = csv.DictReader(file, dialect = self.dialect)
             fields = rdr.fieldnames
             if not fields: return tuple()
         return tuple(fields)
 
-    def open(self:Self,
-             fieldnames:Sequence[str] = tuple(), 
-             dialect:csv.Dialect = default.DIALECT) -> None:
-        self.dialect = dialect
+    def open(self:Self,mode,
+             fieldnames:Sequence[str] = tuple(), *args, **kwargs:dict) -> None:
+        """Opens a CSV file for reading. Passes all arguments to csv.DictWriter()."""
         # If file exists, use first row as columns
         if not self.is_empty:
            # Get column data from existing file
@@ -54,15 +57,11 @@ class WriterCSV(WriteOnlySpreadsheet):
         else:
             self.fields = fieldnames
         self.file = self.fp.open("a", # Append mode
-                                     # SHOULD SHOULD COME FROM self.dialect?
-                                    encoding = default.ENCODING,
-                                    newline = default.NEWLINE,
-                                    errors = default.ENCODING_ERRORS
-                                    )
-        self.writer = csv.DictWriter(self.file, self.fields,
-                                     dialect = self.dialect,
-                                     extrasaction='raise',
-                                     restval = "")
+                                 encoding = self.encoding,
+                                 newline = self.newline,
+                                 errors = self.errors
+                                 )
+        self.writer = csv.DictWriter(self.file,*args,self.fields, **kwargs)
         self._opened = True
 
     def save(self:Self) -> None:
@@ -113,28 +112,23 @@ class WriterCSV(WriteOnlySpreadsheet):
 
 class ReaderCSV(ReadOnlySpreadsheet):
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
-    def __init__(self:Self,
-                 filename: str|Path,
-                 dialect:csv.Dialect = default.DIALECT): 
+    def __init__(self:Self, filename: str|Path, **kwargs:dict): 
+        self.encoding = kwargs.get("encoding",default.ENCODING)
+        self.newline = kwargs.get("newline",default.NEWLINE)
+        self.errors = kwargs.get("errors",default.ENCODING_ERRORS)
         super().__init__(filename)
-        self.dialect = dialect
         if self.fp.suffix not in SUFFIXES: 
             raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
 
-    def open(self:Self) -> None:
+    def open(self:Self, *args, **kwargs) -> None:
         if not self.exists:
             raise sheetError(f"Could not access file {self.fp}.")
         self.file = self.fp.open("r",
-                                     # SHOULD SHOULD COME FROM self.dialect?
-                                    encoding = default.ENCODING,
-                                    newline = "",
-                                    errors = default.ENCODING_ERRORS
+                           encoding = self.encoding,
+                           newline = self.newline,
+                           errors = self.errors
                                     )
-        self.reader = csv.reader(self.file,
-                                    delimiter = ",",
-                                     dialect = self.dialect,
-#                                     restval="" # Value if cell is empty
-                                     )
+        self.reader = csv.reader(self.file, *args, **kwargs)
         self.fields = next(self) # Base class property uses this
         self._opened = True
 

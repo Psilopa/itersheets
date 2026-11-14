@@ -6,10 +6,10 @@ import timeit
 def test_read():
 	global fp
 	global dicts
-	t = itersheets.Reader( fp)
+	t = itersheets.Reader(fp)
 	t.open()
 	dicts = []
-	print(f"Header fields (1st row values):", t.fields)
+#	print(f"Header fields (1st row values):", t.fields)
 	for d in t.dictrows():
 		dicts.append(d)
 	t.close()
@@ -18,15 +18,20 @@ def test_read():
 def test_write():
 	global fp
 	global dicts
+	global newcol 
 	t = itersheets.Writer( fp)
-	t.open()
+	t.open("a")
 	for d in dicts:
-		t.add_row_from_dict(d, on_new_key = itersheets.new_column_action.INSERT )
+		t.add_row_from_dict(d, on_new_key =  newrow[i])
 	t.save()
 	t.close()
 
+# Test reading
 dicts = []
 formats = (".csv", ".xlsx", ".ods")
+newrow = (itersheets.new_column_action.NEWFILE,
+          itersheets.new_column_action.INSERT,
+          itersheets.new_column_action.INSERT)
 fbase = "needscompletion_300k_v1_T"
 do = (True, True, False )  # False
 
@@ -38,8 +43,9 @@ for i in range(3):
 		elapsed = timer.timeit(1)
 		print(f'Read time for {fformat}: {elapsed:.6f} seconds')
 
+# Test writing
 fbase = "out"
-do = (False, True, False )  # False
+do = (True, True, False )  # False
 for i in range(3):	
 	if do[i]:
 		fformat = formats[i]

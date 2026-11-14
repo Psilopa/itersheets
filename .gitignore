@@ -9,6 +9,7 @@
 *.bak
 *.rej
 *~
+.~*
 cur/
 tmp/
 __pycache__/
