@@ -31,7 +31,7 @@ class WriterBase(WriteOnlySpreadsheet):
     def is_empty(self:Self) -> bool:
         return self._format_is_empty()
         
-    # BASE ABSTRACT METHOD IMPLEMENTATIONS
+    #  METHOD REIMPLEMENTATIONS
     def open(self:Self,mode,
              fieldnames:Sequence[str] = tuple(),
              *args,
@@ -40,6 +40,8 @@ class WriterBase(WriteOnlySpreadsheet):
         self.args = args # Keep a copy in case we need to reopen
         self.kwargs = kwargs # Keep a copy in case we need to reopen
             
+        # If mode = "w", make sure the old file is deleted
+        if mode == "w" and self.fp.exists(): self.fp.unlink() 
         # If file exists, use first row as columns
         if self.exists:
             self.format_open(self.fp)
