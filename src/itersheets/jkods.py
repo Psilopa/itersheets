@@ -80,7 +80,7 @@ class ODSFile():
     def format_set_row_font(self:Self, nrow:int, font):
         pass
 
-    def format_save(self:Self, filepath:Path) -> None:
+    def _format_save(self:Self, filepath:Path) -> None:
         # TODO: ERROR HANDLING ON BAD PATH
         assert self.wb, "Workbook should exist when we try to save."
         self.wb.save(filepath)

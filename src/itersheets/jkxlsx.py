@@ -17,6 +17,7 @@ class XLSXFile():
     FORMAT_NAME = "Excel"
     SUFFIXES = [".xlsx"]
     BOLDFONT = Font(bold=True)
+
     def __init__(self:Self):
         self._format_reset()
         if self.SUFFIXES and self.fp.suffix.lower() not in self.SUFFIXES: 
@@ -75,7 +76,7 @@ class XLSXFile():
         for cell in self.ws[nrow+1:nrow+1]:# 1-based indexing in Excel
             cell.font = font
 
-    def format_save(self:Self, filepath:Path) -> None:
+    def _format_save(self:Self, filepath:Path) -> None:
         # TODO: ERROR HANDLING ON BAD PATH
         if self.wb: self.wb.save(filepath)
 

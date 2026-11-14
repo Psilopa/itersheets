@@ -6,29 +6,35 @@ from pathlib import Path
 from .errors import sheetError
 from .base import new_column_action, WriteOnlySpreadsheet, ReadOnlySpreadsheet, default
 from .mytyping import * # For type checking tools
+from .writer import WriterBase
 
-SUFFIXES = [".csv"]
 log = logging.getLogger() # Set from main script if fancy logging is required.
 # These should go to tools (and probably replaced with better tools by someone else)
     
-def sanitize_filename(text:str) -> str:
-    return text
-    dirty = "".join(["\\[/\\?%*:|\"<>0x7F0x00-0x1F]", chr(0x1F) * 15])
-    return re.sub(text,"-",dirty) # Replace all chars in dirty with -.
+class CSVFile: 
+    FORMAT_NAME = "CSV"
+    SUFFIXES = [".csv"]
+    BOLDFONT = None
 
-class CSVFIle: 
-    pass # For now, we have nothing format-specific here.
-
-class WriterCSV(WriteOnlySpreadsheet, CSVFIle): 
+class WriterCSV(WriterBase, CSVFile): 
     # TODO: Convert to use the DictWriter class (needs data-pre-work to handle duplicate 'keys')
     """ """
     def __init__(self:Self, filename: str|Path, **kwargs:dict ):
         """Accept the same keyword arguments as pathlib.Path.open()."""
-        WriteOnlySpreadsheet.__init__(self,filename, **kwargs)
+        WriterBase.__init__(self,filename)
+        CSVFile.__init__(self)
+        if self.SUFFIXES and filename.suffix.lower() not in self.SUFFIXES: 
+            raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
         # Need to store these for _read_header()
         self.dialect = kwargs.get("dialect","excel")
-        if self.fp.suffix.lower() not in SUFFIXES: 
-            raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
+
+    def _format_save(self, fp:Path):
+        assert self.file, "Should not save if file has not been opened yet!"
+        if self.file: self.file.flush() # Write data to file immediately
+
+    def _format_is_empty(self:Self):
+        if not self.exists: return True
+        return self.fp.is_file() and ( self.fp.stat().st_size == 0 )
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def _read_header(self:Self) -> tuple[str,...]:
         row = []
@@ -64,44 +70,23 @@ class WriterCSV(WriteOnlySpreadsheet, CSVFIle):
         self.writer = csv.DictWriter(self.file,*args,self.fields, **kwargs)
         self._opened = True
 
-    def save(self:Self) -> None:
-        self._saved = False
-        assert self.file, "Should not save if file has not been opened yet!"
-        if self.file: self.file.flush() # Write data to file immediately
-        self._saved = True
-
     def addrow(self:Self,
                datarowdict: dict[str,object],
                on_new_field:str = new_column_action.NEWFILE
                ) -> None:
-        if not self.is_open:
-            raise sheetError(f"Trying to write into {self.fp} after closing the file.")        
-        if self.is_empty:
-            self.writeheader()
-        # NOTE: THIS FAILS IF WE ALLOW EMPTY HEADERS IN THE FUTURE
-        # Remove any data with field name = None
-        if None in datarowdict: del datarowdict[None]
-        diff = self.lacks_columns(datarowdict.keys() )        
-        if diff:
-            log.warning(f"Missing column(s): {", ".join(diff)}.")
-            if on_new_field == new_column_action.NEWFILE:
-                if not self.is_empty: # Not an empty file, need to create a backup
-                    oldname = self.fp.stem
-                    newname = self.fp.with_stem(str(oldname) +"_no_"+ "_".join(diff) )
-                    newname = sanitize_filename(newname)
-                    log.warning(f"Moving old file to {newname}.")
-                    self.move(newname, overwrite = True)
-                self.close()
-                self.fields = self.fields + tuple(diff)
-                log.warning(f"Entering new data to {self.filename}.")
-                self.open("w", fieldnames = self.fields, *self.args, **self.kwargs) # Reopen as a new file
-                # Force header writing
-                self.writeheader()
-            else:
-                raise sheetError(f"New column name, but no given way of adding columns specified. WriterCSV supports only swapping to a new file for now.")
-        self.writer.writerow(  datarowdict )
-        self.save() # CSV saving is fast: we can save after eacv row
-        
+        WriterBase.addrow(self,datarowdict, on_new_field) # Default behavior
+        self.save() # CSV saving is fast: we can save after each row
+
+    def on_insert_columns(self):
+        raise NotImplementedError("WriterCSV() does not yet support column insertion.")
+
+    def prep_outrow(self, row):
+        #Overrides writerbase version
+        return row
+    
+    def format_add_row(self, outrow):
+        self.writer.writerow(  outrow )
+
     def writeheader(self:Self) -> None:
         # TODO: ERROR STATE HANDLING
         if not self.is_empty: pass # Do not write a header if file already has material in it
@@ -109,19 +94,18 @@ class WriterCSV(WriteOnlySpreadsheet, CSVFIle):
         # Can update  self.writer.fieldnames as long as header has not yet been written.
         self.writer.writeheader()
         assert self.file, "Should not save if file has not been opened yet!"
-        if self.file: self.file.flush() # Write data to file immediately
+        self.save() # Write data to file immediately
         self._saved = True
 
 
-class ReaderCSV(ReadOnlySpreadsheet, CSVFIle): 
+class ReaderCSV(ReadOnlySpreadsheet, CSVFile): 
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def __init__(self:Self, filename: str|Path, **kwargs:dict): 
         ReadOnlySpreadsheet.__init__(self,filename, **kwargs)
+        CSVFile.__init__(self)
         self.encoding = kwargs.get("encoding",default.ENCODING)
         self.newline = kwargs.get("newline",default.NEWLINE)
         self.errors = kwargs.get("errors",default.ENCODING_ERRORS)
-        if self.fp.suffix not in SUFFIXES: 
-            raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
 
     def open(self:Self, *args, **kwargs) -> None:
         """Opens a CSV file for reading. Passes all arguments to csv.reader()."""
