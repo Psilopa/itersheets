@@ -24,7 +24,7 @@ def test_write():
         global dicts
         global newcol 
         t = itersheets.Writer(fp)
-        t.open("w")
+        t.open("a")
         for d in dicts:
                 t.add_row_from_dict(d, on_new_key =  newrow[i])
         t.save()
@@ -36,9 +36,9 @@ formats = (".csv", ".xlsx", ".ods")
 newrow = (itersheets.new_column_action.NEWFILE,
           itersheets.new_column_action.INSERT,
           itersheets.new_column_action.INSERT)
-fbase = "needscompletion_300k_v1_T"
+fbase = "needscompletion_300k_v1_ED05"
 
-do = (True, True, True )  # False
+do = (False, True, False )  # False
 for i in range(3):	
 	if do[i]:
 		fformat = formats[i]

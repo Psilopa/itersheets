@@ -23,8 +23,8 @@ class WriterBase(WriteOnlySpreadsheet):
     def __init__(self:Self, filename: str|Path): 
         super().__init__(filename)
         self.field2col = {} # Maps column name to column number
-        if self.fp.suffix.lower() not in self.SUFFIXES: 
-            raise sheetError(f"{self.FORMAT_NAME} output file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
+        if self.SUFFIXES and Path(filename).suffix.lower() not in self.SUFFIXES: 
+            raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
 
     @Spreadsheet.is_empty.getter
     #We need to reimplement this as Sheet Writers do not always exist as a file right away
@@ -37,21 +37,22 @@ class WriterBase(WriteOnlySpreadsheet):
              *args,
              **kwargs:dict) -> None:
         self._reset()
+        print("***** IN WRITER:OPEN*****")
         self.args = args # Keep a copy in case we need to reopen
         self.kwargs = kwargs # Keep a copy in case we need to reopen
-        if mode not in ("w",):
-            raise NotImplementedError#("WriterBase does not currently support appending to a file. Only CSV has this capability.")
             
         # If file exists, use first row as columns
-        if not self.is_empty:
+        if self.exists:
+            print("EXISTS")
+            print("FILE PATH = ", self.fp)
             self.format_open(self.fp)
             self.fields = self.format_read_header(self.fp) + tuple(fieldnames)
         else:
+            print("NOT EXISTS")
             self.format_create()
             self.fields = fieldnames
         # Map field name to column number (0-based indexing as we do not use this numbering directly in Excel)
-        self.field2col = self.format_map_fields_to_columns(self.fields)
-        
+        self.field2col = self.format_map_fields_to_columns(self.fields)        
         self._opened = True
 
     def _reset(self:Self):
@@ -113,7 +114,6 @@ class WriterBase(WriteOnlySpreadsheet):
             newfields = self.fields # Grab before closing the old file
             self.close()
         log.warning(f"Entering new data to {self.filename}.")
-        print("Self.fields = ", )
         # Reopen original filename for data
         self.open("w", fieldnames = newfields, *self.args, **self.kwargs) # Reopen as a new file
 

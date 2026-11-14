@@ -23,7 +23,7 @@ class WriterCSV(WriterBase, CSVFile):
         """Accept the same keyword arguments as pathlib.Path.open()."""
         WriterBase.__init__(self,filename)
         CSVFile.__init__(self)
-        if self.SUFFIXES and filename.suffix.lower() not in self.SUFFIXES: 
+        if self.SUFFIXES and Path(filename).suffix.lower() not in self.SUFFIXES: 
             raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
         # Need to store these for _read_header()
         self.dialect = kwargs.get("dialect","excel")
