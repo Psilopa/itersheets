@@ -4,27 +4,30 @@ import timeit
 
 
 def test_read():
-	global fp
-	global dicts
-	t = itersheets.Reader(fp)
-	t.open()
-	dicts = []
-#	print(f"Header fields (1st row values):", t.fields)
-	for d in t.dictrows():
-		dicts.append(d)
-	t.close()
-
+        global fp
+        global dicts
+        t = itersheets.Reader(fp)
+        t.open()
+        dicts = []
+#        print(f"Header fields (1st row values):", t.fields)
+        l = 0
+        for d in t.dictrows():
+#                print(f"Data file :", d)
+                dicts.append(d)
+                l += 1
+        print(f"Read {l} lines.")
+        t.close()
 
 def test_write():
-	global fp
-	global dicts
-	global newcol 
-	t = itersheets.Writer(fp)
-	t.open("w")
-	for d in dicts:
-		t.add_row_from_dict(d, on_new_key =  newrow[i])
-	t.save()
-	t.close()
+        global fp
+        global dicts
+        global newcol 
+        t = itersheets.Writer(fp)
+        t.open("w")
+        for d in dicts:
+                t.add_row_from_dict(d, on_new_key =  newrow[i])
+        t.save()
+        t.close()
 
 # Test reading
 dicts = []
@@ -33,7 +36,7 @@ newrow = (itersheets.new_column_action.NEWFILE,
           itersheets.new_column_action.INSERT,
           itersheets.new_column_action.INSERT)
 fbase = "needscompletion_300k_v1_T"
-do = (True, False, False )  # False
+do = (False, True, False )  # False
 
 for i in range(3):	
 	if do[i]:
@@ -45,7 +48,7 @@ for i in range(3):
 
 # Test writing
 fbase = "out"
-do = (True, False, False )  # False
+do = (False, False, False )  # False
 for i in range(3):	
 	if do[i]:
 		fformat = formats[i]

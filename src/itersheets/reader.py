@@ -9,8 +9,8 @@ from .jkxlsx import XLSXFile
 from .jkods import ODSFile
 
 class ReaderBase(ReadOnlySpreadsheet):
-    def __init__(self:Self, filename: str|Path): 
-        super().__init__(filename)
+    def __init__(self:Self, filename: str|Path, **kwargs:dict) :
+        super().__init__(filename, **kwargs)
         self._reset_variables()
 
     def _reset_variables(self:Self):
@@ -19,7 +19,7 @@ class ReaderBase(ReadOnlySpreadsheet):
         self.file = None
 
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
-    def open(self:Self) -> None:
+    def open(self:Self, *args, **kwargs) -> None:
         self._opened = False
         if not self.exists:
             raise sheetError(f"Coulf not access file {self.fp}.")
@@ -37,12 +37,12 @@ class ReaderBase(ReadOnlySpreadsheet):
 
 #------------------ EXCEL SPECIFIC STUFF -------------
 class ReaderXLSX(ReaderBase, XLSXFile):
-    def __init__(self:Self, filename: str|Path): 
-        ReaderBase.__init__(self,filename)
+    def __init__(self:Self, filename: str|Path, **kwargs:dict) :
+        ReaderBase.__init__(self,filename, **kwargs)
         XLSXFile.__init__(self)
 
 class ReaderODS(ReaderBase, ODSFile):
-    def __init__(self:Self, filename: str|Path): 
-        ReaderBase.__init__(self,filename)
+    def __init__(self:Self, filename: str|Path, **kwargs:dict) :
+        ReaderBase.__init__(self,filename, **kwargs)
         XLSXFile.__init__(self)
 
