@@ -16,12 +16,15 @@ def sanitize_filename(text:str) -> str:
     dirty = "".join(["\\[/\\?%*:|\"<>0x7F0x00-0x1F]", chr(0x1F) * 15])
     return re.sub(text,"-",dirty) # Replace all chars in dirty with -.
 
-class WriterCSV(WriteOnlySpreadsheet): 
+class CSVFIle: 
+    pass # For now, we have nothing format-specific here.
+
+class WriterCSV(WriteOnlySpreadsheet, CSVFIle): 
     # TODO: Convert to use the DictWriter class (needs data-pre-work to handle duplicate 'keys')
     """ """
     def __init__(self:Self, filename: str|Path, **kwargs:dict ):
         """Accept the same keyword arguments as pathlib.Path.open()."""
-        super().__init__(filename, **kwargs)
+        WriteOnlySpreadsheet.__init__(self,filename, **kwargs)
         # Need to store these for _read_header()
         self.dialect = kwargs.get("dialect","excel")
         if self.fp.suffix.lower() not in SUFFIXES: 
@@ -110,10 +113,10 @@ class WriterCSV(WriteOnlySpreadsheet):
         self._saved = True
 
 
-class ReaderCSV(ReadOnlySpreadsheet):
+class ReaderCSV(ReadOnlySpreadsheet, CSVFIle): 
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def __init__(self:Self, filename: str|Path, **kwargs:dict): 
-        super().__init__(filename, **kwargs)
+        ReadOnlySpreadsheet.__init__(self,filename, **kwargs)
         self.encoding = kwargs.get("encoding",default.ENCODING)
         self.newline = kwargs.get("newline",default.NEWLINE)
         self.errors = kwargs.get("errors",default.ENCODING_ERRORS)

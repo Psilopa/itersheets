@@ -22,6 +22,10 @@ class XLSXFile():
         if self.SUFFIXES and self.fp.suffix.lower() not in self.SUFFIXES: 
             raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
 
+    def _format_is_empty(self:Self):
+        if not self.ws or self.ws.iter_rows(): return True # Sanity check
+        else: return False
+
     def _format_reset(self:Self):
         self.wb = None
         self.ws = None # ODS Table  equivalent

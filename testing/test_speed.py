@@ -15,7 +15,7 @@ def test_read():
 #                print(".")
                 dicts.append(d)
                 l += 1
-        print(f"Header fields (1st row values):", t.fields)
+#        print(f"Header fields (1st row values):", t.fields)
         print(f"Read {l} lines.")
         t.close()
 
@@ -24,7 +24,7 @@ def test_write():
         global dicts
         global newcol 
         t = itersheets.Writer(fp)
-        t.open("a")
+        t.open("w")
         for d in dicts:
                 t.add_row_from_dict(d, on_new_key =  newrow[i])
         t.save()

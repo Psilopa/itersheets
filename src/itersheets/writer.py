@@ -6,19 +6,25 @@ from pathlib import Path
 from .jkods import ODSFile
 from .jkxlsx import XLSXFile
 from .errors import sheetError
-from .base import new_column_action, WriteOnlySpreadsheet
+from .base import new_column_action, WriteOnlySpreadsheet, Spreadsheet
 #from .mytyping import * # For type checking tools
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
 
 # -------------- Shared code for XLSX and ODS implementation --------------
 class WriterBase(WriteOnlySpreadsheet):
+
     def __init__(self:Self, filename: str|Path): 
         super().__init__(filename)
         self.field2col = {} # Maps column name to column number
         if self.fp.suffix.lower() not in self.SUFFIXES: 
             raise sheetError(f"{self.FORMAT_NAME} output file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
 
+    @Spreadsheet.is_empty.getter
+    #We need to reimplement this as Sheet Writers do not always exist as a file right away
+    def is_empty(self:Self) -> bool:
+        return self._format_is_empty()
+        
     # BASE ABSTRACT METHOD IMPLEMENTATIONS
     def open(self:Self,mode,
              fieldnames:Sequence[str] = tuple(),
@@ -42,7 +48,6 @@ class WriterBase(WriteOnlySpreadsheet):
 
     def _reset(self:Self):
         self._opened = False
-        self.wb = None        
         self.fields = tuple()
         self.field2col = {} # Maps column name to column number
 
@@ -60,6 +65,7 @@ class WriterBase(WriteOnlySpreadsheet):
         if not self.is_open:
             raise sheetError(f"Trying to write into {self.fp} after closing the file.")        
         if self.is_empty:
+            print("Adding header")
             self.writeheader()
         if None in datarowdict: del datarowdict[None]
         diff = self.lacks_columns( datarowdict.keys() )
@@ -82,7 +88,6 @@ class WriterBase(WriteOnlySpreadsheet):
 
     def writeheader(self:Self) -> None:
         self._saved = False
-        assert self.wb, "self.wb sould exist when we try to writeheader()."
         if self.is_empty: # Empty file, we need to add a row 
             self.format_add_row(self.fields)
             if self.BOLDFONT: self.format_set_row_font(0, self.BOLDFONT)
