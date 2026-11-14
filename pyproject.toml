@@ -7,7 +7,7 @@ build-backend = 'setuptools.build_meta'
 [project]
 name = 'itersheets'
 description = "Reading and writing of spreadsheets file or CSV row by row with a dictionary mapping approach. Currently supports CSV, XLSX and ODS."
-version = 'v0.4'
+version = 'v0.5'
 #dynamic = ['version']
 authors = [ {name = "Jere Kahanpää"} ]
 readme = "README.md"

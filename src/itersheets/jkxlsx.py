@@ -15,10 +15,18 @@ log = logging.getLogger() # Set from main script if fancy logging is required.
 
 class XLSXFile():
     FORMAT_NAME = "Excel"
-    SUFFIXES = [".xlsx", "xlsx"]
+    SUFFIXES = [".xlsx"]
     BOLDFONT = Font(bold=True)
+
     def __init__(self:Self):
         self._format_reset()
+        if self.SUFFIXES and self.fp.suffix.lower() not in self.SUFFIXES: 
+            raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
+
+    def _format_is_empty(self:Self):
+        if not self.ws: return True # Sanity check
+        if self.ws.max_row <2: return True # NOTE Headers do not cound!
+        return False
 
     def _format_reset(self:Self):
         self.wb = None
@@ -68,7 +76,7 @@ class XLSXFile():
         for cell in self.ws[nrow+1:nrow+1]:# 1-based indexing in Excel
             cell.font = font
 
-    def format_save(self:Self, filepath:Path) -> None:
+    def _format_save(self:Self, filepath:Path) -> None:
         # TODO: ERROR HANDLING ON BAD PATH
         if self.wb: self.wb.save(filepath)
 
@@ -79,7 +87,7 @@ class XLSXFile():
             self.wb.close()
         self._format_reset()
 
-    def iterator_values(self:Self):
+    def value_iterator(self:Self):
         assert self.ws, "self.ws sould exist when we try to read values from it."
         return self.ws.values
 

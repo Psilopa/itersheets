@@ -2,13 +2,19 @@
 # STDlib
 from abc import ABC, abstractmethod
 from pathlib import Path
-import logging, json
+import logging, json, itertools
 
 # My own modules
-#from .mytyping import * # For type checking tools
+from .mytyping import * # For type checking tools
 from .errors import sheetError
+from .tools import unique
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
+
+class default:
+    ENCODING_ERRORS = "convert"
+    ENCODING = "utf8"
+    NEWLINE = ""
 
 class new_column_action:
     NEWFILE = "newfile" # Only supported for CSV at the moment
@@ -34,16 +40,17 @@ def list2printvalues( mylist: Collection[dict] )-> str:
         out +=  valuedict.values()
     return "\n".join(out)
 
-# These should go to tools (and probably replaced with better tools by someone else)
-def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 
 
 class Spreadsheet(ABC):
-    def __init__(self:Self, filename: str|Path) : 
+    def __init__(self:Self, filename: str|Path, **kwargs:dict ) : 
+        self.encoding = kwargs.get("encoding",default.ENCODING)
+        self.newline = kwargs.get("newline",default.NEWLINE)
+        self.errors = kwargs.get("errors",default.ENCODING_ERRORS)
         self.fp = Path(filename)
         self.file = None
         self._opened = False
         self._fields = tuple()
-        self._currentfields = set()
+        self._fieldset = set(self._fields)
 
     @property
     def filename(self:Self) -> Path: return self.fp
@@ -64,9 +71,10 @@ class Spreadsheet(ABC):
     @property
     def fields(self:Self)-> tuple[str,...]: return self._fields
 
-    @abstractmethod        
-    def open(self:Self, fieldnames: Sequence[str] = []) -> None:
-        self._opened = True
+    @fields.setter
+    def fields(self:Self, val) -> None:
+        self._fields = unique( val )
+        self._fieldset = set( self._fields )
 
     def close(self:Self) -> None:
         "Closes the associated file(s) and marks the Spreadsheet as not open."
@@ -75,28 +83,27 @@ class Spreadsheet(ABC):
 
     def has_columns(self:Self, fields:Collection[str]) -> bool:
         "True is spreadsheet has a field for each value in fields."
-        return self._currentfields.issuperset( set(fields) )
+        return self._fieldset.issuperset( set(fields) )
 
     def lacks_columns(self:Self, fields:Collection[str]) -> set[str]:
         "Returns a set of field names that are missing from the spreadsheet."
-        return set(fields).difference( self._currentfields )
+        return set(fields).difference( self._fieldset )
 
 # ------------ WRITE ONLY SPREADSHEETS -------------    
 class WriteOnlySpreadsheet(Spreadsheet):
-    def __init__(self:Self, filename: str|Path) :
-        super().__init__(filename)
+    def __init__(self:Self, filename: str|Path, **kwargs:dict ):
+        super().__init__(filename, **kwargs)
         self._saved = False
 
     @property
     def is_saved(self:Self) -> bool: return self._saved
 
-    @property
-    def fields(self:Self)-> tuple[str,...]: return self._fields
-
-    @fields.setter
-    def fields(self:Self, val) -> None:
-        self._fields = tuple(unique(val))
-        self._currentfields = set(self._fields)
+    @abstractmethod        
+    def open(self:Self,mode,
+             fieldnames:Sequence[str] = tuple(),
+             *args,
+             **kwargs:dict) -> None:
+        raise NotImplementedError
 
     # Override parent class methods in child classes
     def close(self:Self, save:bool=True) -> None:
@@ -105,14 +112,15 @@ class WriteOnlySpreadsheet(Spreadsheet):
         super().close()
 
     @abstractmethod        
-    def save(self:Self): pass
+    def save(self:Self): 
+        raise NotImplementedError
         
     @abstractmethod        
     def addrow(self:Self,
                datarowdict: dict[str,object],
                on_new_field:str 
                ) -> None:
-        self._saved = False
+        raise NotImplementedError
 
    
     def add_row_from_dict(self:Self,
@@ -134,26 +142,33 @@ class WriteOnlySpreadsheet(Spreadsheet):
         self.fp.replace(newpath)
 # -------------- READING ----------------
 class ReadOnlySpreadsheet(Spreadsheet):
-    def __init__(self:Self, filename: str|Path) :
-        super().__init__(filename)
-
-    # Iterator approach
-    @abstractmethod        
-    def next(self:Self) -> Iterable[str]: 
-        return iter([])
+    def __init__(self:Self, filename: str|Path, **kwargs:dict) :
+        super().__init__(filename, **kwargs)
 
     @abstractmethod        
-    def open(self:Self) -> None:
+    def open(self:Self, *args, **kwargs) -> None:
         self._opened = True
 
-#    @abstractmethod        
-#    def get_row(self,n:int, func:Callable|None=None, replace_none:str|None=None) -> tuple:
-#        """Get row values as a tuple.
-#
-#        n - int. Row number, starting from 0.
-#        func - if not None, a function that is called for every element
-#        replace_none - None or string. If a string, None values is output are replaced with this value *before* the function func is called.
-#        """
-#        return tuple()
+    # Iteration methods
+    def __iter__(self):
+        "Should set up a starting point for iteration"
+        return self
+
+    @abstractmethod        
+    def __next__(self:Self):
+        "Next row as a list"
+        raise NotImplementedError
+
+    def dictrows(self:Self):
+        """An iterator returning rows as a dictionary of column_header: cell value pairs.
+
+        Only available if row 1 has unique column names.
+        """
+        # itertools.zip_longest() pads the shorter iterable with Nones
+        for row in self: yield {k:v for k,v in itertools.zip_longest(self.fields,row)}
+                    
+    def tuplerows(self:Self):
+        "For consistency with dictrows, returns rows as tuples"
+        for row in self: yield tuple(row)
 
 

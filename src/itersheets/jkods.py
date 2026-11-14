@@ -10,18 +10,22 @@ from .errors import sheetError
 from .base import ReadOnlySpreadsheet
 #from .mytyping import * # For type checking tools
 
-def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 
-
 log = logging.getLogger() # Set from main script if fancy logging is required.
 
 class ODSFile():    
-    SUFFIXES = [".ods", "ods"]
     FORMAT_NAME = "ODS"
+    SUFFIXES = [".ods"]
     BOLDFONT = None #Font(bold=True)
     def __init__(self:Self):
-        self.formar_reset()
+        self._format_reset()
+        if self.SUFFIXES and self.fp.suffix.lower() not in self.SUFFIXES: 
+            raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
 
-    def formar_reset(self:Self):
+    def _format_is_empty(self:Self):
+        if not self.table: return True # Sanity check
+        else: return False
+
+    def _format_reset(self:Self):
         self.wb = None
         self.table = None
         
@@ -29,9 +33,9 @@ class ODSFile():
         tmpwb = Document(filepath)
         assert tmpwb, "wb should exist when we try to read a row in _read_header_values()."
         tmptable = tmpwb.body.tables[0]
-        maxlen = int(tmptable.size[0])
-        rv = unique([tmptable.get_row(0).get_value(x) for x in range(0, maxlen)])
-#        rv = tuple(x for x in rv if x!=None) # Remove Nones
+        maxlen = int(tmptable.width)
+        log.debug(f"ODSFile size reported as {maxlen}.")
+        rv = tuple([tmptable.get_row(0).get_value(x) for x in range(0, maxlen)])
         tmpwb = None 
         return rv
 
@@ -42,6 +46,8 @@ class ODSFile():
         if not self.wb:
             raise sheetError(f"Could not open file {filepath}")
         self.table = self.wb.body.tables[0]
+        self.table.optimize_height()
+        self.table.optimize_width()
 
     def format_create(self:Self):
         self.wb = Document("spreadsheet")
@@ -74,7 +80,7 @@ class ODSFile():
     def format_set_row_font(self:Self, nrow:int, font):
         pass
 
-    def format_save(self:Self, filepath:Path) -> None:
+    def _format_save(self:Self, filepath:Path) -> None:
         # TODO: ERROR HANDLING ON BAD PATH
         assert self.wb, "Workbook should exist when we try to save."
         self.wb.save(filepath)
@@ -82,68 +88,11 @@ class ODSFile():
     def format_close(self:Self, filepath:Path|None=None) -> None:
         if self.wb and filepath:
             self.format_save(filepath)
-        self.formar_reset()
+        self._format_reset()
 
-    def iterator_values(self:Self):
-        return iter( rowIterator( self.format_get_row_values,
-                                  int(self.table.size[1]) - 1,
-                                  startrow = 1
-                                  )
-                    )
-
-# READING
-class rowIterator:
-    """Startrow is 0-indexed (first row = row 0)"""
-    def __init__(self:Self, func:Callable, maxlen:int, startrow:int = 0):
-        self.func = func
-        self.startrow = startrow 
-        self.maxlen = maxlen
-    def __iter__(self:Self):
-        self.nrow = self.startrow
-        return self
-    def __next__(self:Self):
-        if self.nrow <= self.maxlen:
-            rv = self.func(self.nrow)
-            self.nrow += 1
-            return rv
-        else:
-          raise StopIteration
-
-
-class ReadODS(ReadOnlySpreadsheet, ODSFile):
-    def __init__(self:Self, filename: str|Path): 
-        super().__init__(filename)
-        self._reset_variables()
-        if self.fp.suffix.lower() not in SUFFIXES: 
-            raise sheetError(f"{FORMAT_NAME} input file name must end in {SUFFIXES[0]}. {self.fp} fails")
-
-    def _reset_variables(self:Self):
-        self._opened = False
-        self.wb = None
-        self.table = None
-        self.fields = tuple()
-        self.field2col = {  }  # Mapping field name to column number (0-indexed) Set by ODSFile open/create
-
-    # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
-    def open(self:Self) -> None:
-        self._opened = False
-        if not self.exists:
-            raise sheetError(f"Coulf not access file {self.fp}.")
-        self.format_open(self.fp)
-        self.iter = self.iterator_values() 
-        self.fields = self.format_get_row_values(0)       
-        self._opened = True
-
-    def next(self:Self) -> Iterator[tuple]:
-        return self.iter
-        
-    def close(self:Self) -> None:
-        if self.wb: self.wb = None
-        self._reset_variables()
-        
-    @property
-    def fields(self:Self)-> tuple[str,...]: return tuple(self._fields)
-
-    @fields.setter
-    def fields(self:Self, val:Sequence) -> None:
-        self._fields = tuple(unique(val))
+    def value_iterator(self:Self):
+        for row in self.table.iter_rows():
+            vals = []
+            for cell in row.iter_cells():
+                vals.append( cell.get_value() )
+            yield tuple(vals)
