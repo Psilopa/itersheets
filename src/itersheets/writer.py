@@ -25,6 +25,9 @@ class WriterBase(WriteOnlySpreadsheet):
              *args,
              **kwargs:dict) -> None:
         self._reset()
+        if mode not in ("w",):
+            raise NotImplementedError#("WriterBase does not currently support appending to a file. Only CSV has this capability.")
+            
         # If file exists, use first row as columns
         if not self.is_empty:
             self.format_open(self.fp)

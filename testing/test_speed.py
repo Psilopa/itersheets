@@ -38,7 +38,7 @@ newrow = (itersheets.new_column_action.NEWFILE,
           itersheets.new_column_action.INSERT)
 fbase = "needscompletion_300k_v1_T"
 
-do = (True, True, False )  # False
+do = (True, True, True )  # False
 for i in range(3):	
 	if do[i]:
 		fformat = formats[i]
@@ -49,7 +49,7 @@ for i in range(3):
 #print(dicts)
 # Test writing
 fbase = "out"
-do = (True, True, False )  # False
+do = (True, True, True )  # False
 for i in range(3):	
 	if do[i]:
 		fformat = formats[i]
