@@ -9,7 +9,6 @@ As the name suggests, all row operations are done in one sweep row-by-row. No ra
 - Allow users to specify first line of data
 - ? Allow multiple header lines, if >1, join column headers as a tuple for dictionary access (header_row1, header_row2): data
 - Support CSV in-place line addition
-- Data type validators or converters based on column header?
 
 # Installation
 For now, you have to build your own Python package if you want to use this as a simple import. 
