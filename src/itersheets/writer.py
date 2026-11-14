@@ -65,7 +65,6 @@ class WriterBase(WriteOnlySpreadsheet):
         if not self.is_open:
             raise sheetError(f"Trying to write into {self.fp} after closing the file.")        
         if self.is_empty:
-            print("Adding header")
             self.writeheader()
         if None in datarowdict: del datarowdict[None]
         diff = self.lacks_columns( datarowdict.keys() )
