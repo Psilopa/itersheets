@@ -123,7 +123,7 @@ class ReaderCSV(ReadOnlySpreadsheet):
 
     def open(self:Self) -> None:
         if not self.exists:
-            raise sheetError(f"Coulf not access file {self.fp}.")
+            raise sheetError(f"Could not access file {self.fp}.")
         self.file = self.fp.open("r",
                                      # SHOULD SHOULD COME FROM self.dialect?
                                     encoding = default.ENCODING,
