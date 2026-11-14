@@ -103,7 +103,7 @@ class WriteOnlySpreadsheet(Spreadsheet):
              fieldnames:Sequence[str] = tuple(),
              *args,
              **kwargs:dict) -> None:
-        self._opened = True
+        raise NotImplementedError
 
     # Override parent class methods in child classes
     def close(self:Self, save:bool=True) -> None:
@@ -112,14 +112,15 @@ class WriteOnlySpreadsheet(Spreadsheet):
         super().close()
 
     @abstractmethod        
-    def save(self:Self): pass
+    def save(self:Self): 
+        raise NotImplementedError
         
     @abstractmethod        
     def addrow(self:Self,
                datarowdict: dict[str,object],
                on_new_field:str 
                ) -> None:
-        self._saved = False
+        raise NotImplementedError
 
    
     def add_row_from_dict(self:Self,
@@ -156,7 +157,7 @@ class ReadOnlySpreadsheet(Spreadsheet):
     @abstractmethod        
     def __next__(self:Self):
         "Next row as a list"
-        pass
+        raise NotImplementedError
 
     def dictrows(self:Self):
         """An iterator returning rows as a dictionary of column_header: cell value pairs.

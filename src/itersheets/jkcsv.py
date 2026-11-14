@@ -97,7 +97,7 @@ class WriterCSV(WriteOnlySpreadsheet):
             else:
                 raise sheetError(f"New column name, but no given way of adding columns specified. WriterCSV supports only swapping to a new file for now.")
         self.writer.writerow(  datarowdict )
-        self.save()
+        self.save() # CSV saving is fast: we can save after eacv row
         
     def writeheader(self:Self) -> None:
         # TODO: ERROR STATE HANDLING

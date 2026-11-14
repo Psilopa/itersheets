@@ -24,7 +24,7 @@ def test_write():
         global dicts
         global newcol 
         t = itersheets.Writer(fp)
-        t.open("w")
+        t.open("a")
         for d in dicts:
                 t.add_row_from_dict(d, on_new_key =  newrow[i])
         t.save()

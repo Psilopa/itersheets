@@ -20,9 +20,10 @@ class WriterBase(WriteOnlySpreadsheet):
             raise sheetError(f"{self.FORMAT_NAME} output file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
 
     # BASE ABSTRACT METHOD IMPLEMENTATIONS
-    def open(self:Self,
-             fieldnames:Sequence[str] = tuple()
-             ) -> None:
+    def open(self:Self,mode,
+             fieldnames:Sequence[str] = tuple(),
+             *args,
+             **kwargs:dict) -> None:
         self._reset()
         # If file exists, use first row as columns
         if not self.is_empty:
