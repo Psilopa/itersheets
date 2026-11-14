@@ -10,7 +10,7 @@ from .base import new_column_action, WriteOnlySpreadsheet
 #from .mytyping import * # For type checking tools
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
-def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 
+
 # -------------- Shared code for XLSX and ODS implementation --------------
 class WriterBase(WriteOnlySpreadsheet):
     def __init__(self:Self, filename: str|Path): 
@@ -33,6 +33,7 @@ class WriterBase(WriteOnlySpreadsheet):
             self.fields = fieldnames
         # Map field name to column number (0-based indexing as we do not use this numbering directly in Excel)
         self.field2col = self.format_map_fields_to_columns(self.fields)
+        
         self._opened = True
 
     def _reset(self:Self):
@@ -42,6 +43,7 @@ class WriterBase(WriteOnlySpreadsheet):
         self.field2col = {} # Maps column name to column number
 
     def save(self:Self) -> None:
+        if self._saved: return # Nothing to do
         self._saved = False
         self.format_save(self.fp)
         self._saved = True
@@ -56,7 +58,8 @@ class WriterBase(WriteOnlySpreadsheet):
         if self.is_empty:
             self.writeheader()
         diff = self.lacks_columns( datarowdict.keys() )
-        if diff: 
+        diff.remove(None) # Remove None, if there was such a value
+        if diff:
             log.warning(f"Missing column(s): {", ".join(diff)}.")
             if on_new_field == new_column_action.INSERT:
                 log.info(f"Inserting new columns: {", ".join(diff)} into {self.filename}.")
@@ -71,7 +74,7 @@ class WriterBase(WriteOnlySpreadsheet):
             pos = self.field2col[colname]
             outrow[pos] = str(value) if value else ""
         self.format_add_row(outrow)
-        self.save() # Saving after each insert if quite heavy
+#        self.save() # Saving after each insert is quite heavy!
 
     def writeheader(self:Self) -> None:
         self._saved = False

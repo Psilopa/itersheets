@@ -75,8 +75,12 @@ class WriterCSV(WriteOnlySpreadsheet):
             raise sheetError(f"Trying to write into {self.fp} after closing the file.")        
         if self.is_empty:
             self.writeheader()
+        print(datarowdict)
+        # NOTE: THIS FAILS IF WE ALLOW EMPTY HEADERS IN THE FUTURE
+        # Remove any data with field name = None
+        if None in datarowdict: del datarowdict[None]
         diff = self.lacks_columns(datarowdict.keys() )        
-        if diff: 
+        if diff:
             log.warning(f"Missing column(s): {", ".join(diff)}.")
             if on_new_field == new_column_action.NEWFILE:
                 if not self.is_empty: # Not an empty file, need to create a backup

@@ -9,13 +9,13 @@ def test_read():
         t = itersheets.Reader(fp)
         t.open()
         dicts = []
-        print(f"Header fields (1st row values):", t.fields)
         l = 0
         for d in t.dictrows():
-                print(f"Data line :", d)
+#                print(f"Data line :", d)
 #                print(".")
                 dicts.append(d)
                 l += 1
+        print(f"Header fields (1st row values):", t.fields)
         print(f"Read {l} lines.")
         t.close()
 
@@ -38,7 +38,7 @@ newrow = (itersheets.new_column_action.NEWFILE,
           itersheets.new_column_action.INSERT)
 fbase = "needscompletion_300k_v1_T"
 
-do = (True, False, False )  # False
+do = (True, True, True )  # False
 for i in range(3):	
 	if do[i]:
 		fformat = formats[i]
@@ -46,16 +46,16 @@ for i in range(3):
 		timer = timeit.Timer(test_read)
 		elapsed = timer.timeit(1)
 		print(f'Read time for {fformat}: {elapsed:.6f} seconds')
-
+#print(dicts)
 # Test writing
 fbase = "out"
-
 do = (True, False, False )  # False
 for i in range(3):	
 	if do[i]:
 		fformat = formats[i]
 		fbase = "out"
 		fp = fbase + fformat
+		print("Writing to", fp)
 		timer = timeit.Timer(test_write)
 		elapsed = timer.timeit(1)
 		print(f'Write time for {fformat}: {elapsed:.6f} seconds')

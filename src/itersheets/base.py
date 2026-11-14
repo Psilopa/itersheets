@@ -7,6 +7,7 @@ import logging, json, itertools
 # My own modules
 from .mytyping import * # For type checking tools
 from .errors import sheetError
+from .tools import unique
 
 log = logging.getLogger() # Set from main script if fancy logging is required.
 
@@ -39,8 +40,6 @@ def list2printvalues( mylist: Collection[dict] )-> str:
         out +=  valuedict.values()
     return "\n".join(out)
 
-# These should go to tools (and probably replaced with better tools by someone else)
-def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 
 
 class Spreadsheet(ABC):
     def __init__(self:Self, filename: str|Path, **kwargs:dict ) : 
@@ -74,8 +73,8 @@ class Spreadsheet(ABC):
 
     @fields.setter
     def fields(self:Self, val) -> None:
-        self._fields = tuple(unique(val))
-        self._fieldset = set(self._fields)
+        self._fields = unique( val )
+        self._fieldset = set( self._fields )
 
     def close(self:Self) -> None:
         "Closes the associated file(s) and marks the Spreadsheet as not open."

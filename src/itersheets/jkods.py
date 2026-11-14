@@ -10,8 +10,6 @@ from .errors import sheetError
 from .base import ReadOnlySpreadsheet
 #from .mytyping import * # For type checking tools
 
-def unique(s: Sequence) ->tuple[str,...] :return tuple(dict.fromkeys(s)) 
-
 log = logging.getLogger() # Set from main script if fancy logging is required.
 
 class ODSFile():    
@@ -33,8 +31,7 @@ class ODSFile():
         tmptable = tmpwb.body.tables[0]
         maxlen = int(tmptable.width)
         log.debug(f"ODSFile size reported as {maxlen}.")
-        rv = unique([tmptable.get_row(0).get_value(x) for x in range(0, maxlen)])
-#        rv = tuple(x for x in rv if x!=None) # Remove Nones
+        rv = tuple([tmptable.get_row(0).get_value(x) for x in range(0, maxlen)])
         tmpwb = None 
         return rv
 

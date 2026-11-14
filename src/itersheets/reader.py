@@ -26,6 +26,7 @@ class ReaderBase(ReadOnlySpreadsheet):
         self.format_open(self.fp)
         self.iter = self.value_iterator() # BAD DESIGN: THIS COMES FROM THE XFILE CHILD
         self.fields = next(self.iter) # Grab 1st row and use it as field names
+        self.fields = tuple(x for x in self.fields if x) # STRIPS empty/NONE VALUES
         self._opened = True
 
     def __next__(self:Self):
