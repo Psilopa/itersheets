@@ -20,7 +20,7 @@ def test_write():
 	global dicts
 	global newcol 
 	t = itersheets.Writer(fp)
-	t.open("a")
+	t.open("w")
 	for d in dicts:
 		t.add_row_from_dict(d, on_new_key =  newrow[i])
 	t.save()
@@ -33,7 +33,7 @@ newrow = (itersheets.new_column_action.NEWFILE,
           itersheets.new_column_action.INSERT,
           itersheets.new_column_action.INSERT)
 fbase = "needscompletion_300k_v1_T"
-do = (True, True, False )  # False
+do = (True, False, False )  # False
 
 for i in range(3):	
 	if do[i]:
@@ -45,7 +45,7 @@ for i in range(3):
 
 # Test writing
 fbase = "out"
-do = (True, True, False )  # False
+do = (True, False, False )  # False
 for i in range(3):	
 	if do[i]:
 		fformat = formats[i]

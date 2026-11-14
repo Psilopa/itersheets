@@ -43,7 +43,9 @@ class WriterCSV(WriteOnlySpreadsheet):
              fieldnames:Sequence[str] = tuple(),
              *args,
              **kwargs:dict) -> None:
-        """Opens a CSV file for reading. Passes all arguments to csv.DictWriter()."""
+        """Opens a CSV file for writing. Passes all arguments to csv.DictWriter()."""
+        self.args = args # Keep a copy in case we need to reopen
+        self.kwargs = kwargs # Keep a copy in case we need to reopen
         # If file exists, use first row as columns
         if not self.is_empty:
            # Get column data from existing file
@@ -86,7 +88,7 @@ class WriterCSV(WriteOnlySpreadsheet):
                 self.close()
                 self.fields = self.fields + tuple(diff)
                 log.warning(f"Entering new data to {self.filename}.")
-                self.open(fieldnames = self.fields) # Reopen as a new file
+                self.open("w", fieldnames = self.fields, *self.args, **self.kwargs) # Reopen as a new file
                 # Force header writing
                 self.writeheader()
             else:
@@ -116,6 +118,7 @@ class ReaderCSV(ReadOnlySpreadsheet):
             raise sheetError(f"CSV output file name must end in '.csv'. {self.fp} fails")
 
     def open(self:Self, *args, **kwargs) -> None:
+        """Opens a CSV file for reading. Passes all arguments to csv.reader()."""
         if not self.exists:
             raise sheetError(f"Could not access file {self.fp}.")
         self.file = self.fp.open("r",
