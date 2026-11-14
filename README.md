@@ -26,12 +26,23 @@ For now, you have to build your own Python package if you want to use this as a 
 ```
 from itersheets import itersheets
 t = itersheets.WriterXLSX( "test.xlsx" )
-t.open(["col_foo", "col_bar"])
+t.open("w", ["col_foo", "col_bar"])
 t.add_row_from_dict({"col_foo":"test1", "col_baz":"test2"}, on_new_key = itersheets.new_column_action.INSERT )
 
 json = '{"col_foo":"jsonD",  "col_baz":"jsonE"}'
 t.add_row_from_json(json, on_new_key = itersheets.new_column_action.INSERT )
 t.save()
+t.close()
+```
+
+## Reading data
+
+```
+t = itersheets.Reader( "test.xlsx" ) # Generic reader guesses the type from the file name
+t.open()
+print(f"Header fields (1st row values):", t.fields)
+for d in t.dictrows():
+    print("row as dictionary = ", d)
 t.close()
 ```
 
