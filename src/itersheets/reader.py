@@ -10,6 +10,7 @@ from .jkods import ODSFile
 
 class ReaderBase(ReadOnlySpreadsheet):
     def __init__(self:Self, filename: str|Path, **kwargs:dict) :
+        __doc__ = ReadOnlySpreadsheet.__doc__
         super().__init__(filename, **kwargs)
         self._reset_variables()
 
@@ -20,10 +21,12 @@ class ReaderBase(ReadOnlySpreadsheet):
 
     # ------- ABSTRACT METHOD IMPLEMENTATIONS -----------
     def open(self:Self, *args, **kwargs) -> None:
+        """Open a file for reading. Any arguments and keywords are passed to format_open(),
+        which handles format-specific file issues like CSV setup."""
         self._opened = False
         if not self.exists:
             raise sheetError(f"Coulf not access file {self.fp}.")
-        self.format_open(self.fp)
+        self.format_open(self.fp, *args, **kwargs)
         self.iter = self.value_iterator() # BAD DESIGN: THIS COMES FROM THE XFILE CHILD
         self.fields = next(self.iter) # Grab 1st row and use it as field names
         self.fields = tuple(x for x in self.fields if x) # STRIPS empty/NONE VALUES
@@ -39,11 +42,14 @@ class ReaderBase(ReadOnlySpreadsheet):
 #------------------ EXCEL SPECIFIC STUFF -------------
 class ReaderXLSX(ReaderBase, XLSXFile):
     def __init__(self:Self, filename: str|Path, **kwargs:dict) :
+        __doc__ = ReadOnlySpreadsheet.__doc__
         ReaderBase.__init__(self,filename, **kwargs)
         XLSXFile.__init__(self)
 
 class ReaderODS(ReaderBase, ODSFile):
     def __init__(self:Self, filename: str|Path, **kwargs:dict) :
+        __doc__ = ReadOnlySpreadsheet.__doc__
         ReaderBase.__init__(self,filename, **kwargs)
         XLSXFile.__init__(self)
+
 

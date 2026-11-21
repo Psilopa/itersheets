@@ -16,18 +16,20 @@ class ODSFile():
     FORMAT_NAME = "ODS"
     SUFFIXES = [".ods"]
     BOLDFONT = None #Font(bold=True)
+
     def __init__(self:Self):
         self._format_reset()
         if self.SUFFIXES and self.fp.suffix.lower() not in self.SUFFIXES: 
             raise sheetError(f"{self.FORMAT_NAME} inputput file name must end in {self.SUFFIXES[0]}. {self.fp} fails")
 
     def _format_is_empty(self:Self):
-        if not self.table: return True # Sanity check
+        if self.no_data or (not self.table): return True 
         else: return False
 
     def _format_reset(self:Self):
         self.wb = None
         self.table = None
+        self.no_data = True # Keep track if any data has been written
         
     def format_read_header(self:Self, filepath:Path) -> tuple:
         tmpwb = Document(filepath)
@@ -66,6 +68,7 @@ class ODSFile():
         for n in range(len(values)):
             row.set_value(n, values[n])
         self.table.append(row)
+        self.no_data = False # Keep track if any data has been written
 
     def format_get_row_values(self:Self, nrow:int) -> tuple:
         assert self.table, "Self.table should exist when we ask for row values."
@@ -76,6 +79,7 @@ class ODSFile():
         row = self.table.get_row(nrow)
         row.set_values(values)
         self.table.set_row(nrow, row)
+        self.no_data = False # Keep track if any data has been written
 
     def format_set_row_font(self:Self, nrow:int, font):
         pass

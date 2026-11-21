@@ -42,7 +42,20 @@ def list2printvalues( mylist: Collection[dict] )-> str:
 
 
 class Spreadsheet(ABC):
-    def __init__(self:Self, filename: str|Path, **kwargs:dict ) : 
+    """Spreadsheet abstract base class."""
+    def __init__(self:Self, filename: str|Path, **kwargs:dict ) :
+        """Constructor. Generic file properies, especially the encoding,
+        are set here.
+
+        Arguments:
+        filename: string or Path - the target file.
+
+        Keyword arguments: As in pathlib.Path.open(), but with the following
+        defaults:
+        encoding = itersheets.base.default.ENCODING
+        errors = itersheets.base.default.ENCODING_ERRORS
+        newline = itersheets.base.default.NEWLINE
+        """
         self.encoding = kwargs.get("encoding",default.ENCODING)
         self.newline = kwargs.get("newline",default.NEWLINE)
         self.errors = kwargs.get("errors",default.ENCODING_ERRORS)
@@ -92,6 +105,7 @@ class Spreadsheet(ABC):
 # ------------ WRITE ONLY SPREADSHEETS -------------    
 class WriteOnlySpreadsheet(Spreadsheet):
     def __init__(self:Self, filename: str|Path, **kwargs:dict ):
+        __doc__ = ReadOnlySpreadsheet.__doc__
         super().__init__(filename, **kwargs)
         self._saved = False
 
@@ -99,9 +113,9 @@ class WriteOnlySpreadsheet(Spreadsheet):
     def is_saved(self:Self) -> bool: return self._saved
 
     @abstractmethod        
-    def open(self:Self,mode,
+    def open(self:Self,mode:str,
              fieldnames:Sequence[str] = tuple(),
-             *args,
+             *args:Sequence,
              **kwargs:dict) -> None:
         raise NotImplementedError
 
@@ -122,6 +136,9 @@ class WriteOnlySpreadsheet(Spreadsheet):
                ) -> None:
         raise NotImplementedError
 
+    @abstractmethod        
+    def writeheader(self:Self) -> None:
+        raise NotImplementedError
    
     def add_row_from_dict(self:Self,
                            datarowdict: dict[str,object],
@@ -143,21 +160,22 @@ class WriteOnlySpreadsheet(Spreadsheet):
 # -------------- READING ----------------
 class ReadOnlySpreadsheet(Spreadsheet):
     def __init__(self:Self, filename: str|Path, **kwargs:dict) :
+        __doc__ = ReadOnlySpreadsheet.__doc__
         super().__init__(filename, **kwargs)
 
     @abstractmethod        
     def open(self:Self, *args, **kwargs) -> None:
-        self._opened = True
-
-    # Iteration methods
-    def __iter__(self):
-        "Should set up a starting point for iteration"
-        return self
+        raise NotImplementedError
 
     @abstractmethod        
     def __next__(self:Self):
         "Next row as a list"
         raise NotImplementedError
+
+    # Iteration methods
+    def __iter__(self):
+        "Should set up a starting point for iteration"
+        return self
 
     def dictrows(self:Self):
         """An iterator returning rows as a dictionary of column_header: cell value pairs.

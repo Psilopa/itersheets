@@ -52,7 +52,11 @@ class WriterCSV(WriterBase, CSVFile):
              fieldnames:Sequence[str] = tuple(),
              *args,
              **kwargs:dict) -> None:
-        """Opens a CSV file for writing. Passes all arguments to csv.DictWriter()."""
+        """Opens a CSV file for writing.
+        Arguments:
+            mode - string. File writing mode as in open().
+        Any other arguments and keywords are passed to 
+        csv.DictWriter()."""
         self.args = args # Keep a copy in case we need to reopen
         self.kwargs = kwargs # Keep a copy in case we need to reopen
         # If file exists, use first row as columns
@@ -62,12 +66,11 @@ class WriterCSV(WriterBase, CSVFile):
         else:
             self.fields = fieldnames
         self.file = self.fp.open(mode, # Append mode
-                                 *args,
                                  encoding = self.encoding,
                                  newline = self.newline,
                                  errors = self.errors                                 
                                  )
-        self.writer = csv.DictWriter(self.file,*args,self.fields, **kwargs)
+        self.writer = csv.DictWriter(self.file, self.fields, *args, **kwargs)
         self._opened = True
 
     def addrow(self:Self,
@@ -109,6 +112,7 @@ class ReaderCSV(ReadOnlySpreadsheet, CSVFile):
 
     def open(self:Self, *args, **kwargs) -> None:
         """Opens a CSV file for reading. Passes all arguments to csv.reader()."""
+        self._opened = False
         if not self.exists:
             raise sheetError(f"Could not access file {self.fp}.")
         self.file = self.fp.open("r",

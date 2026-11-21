@@ -25,12 +25,14 @@ class XLSXFile():
 
     def _format_is_empty(self:Self):
         if not self.ws: return True # Sanity check
+        if self.no_data: return True
         if self.ws.max_row <2: return True # NOTE Headers do not cound!
         return False
 
     def _format_reset(self:Self):
         self.wb = None
         self.ws = None # ODS Table  equivalent
+        self.no_data = False # Keep track if any data has been written
         
     def format_read_header(self:Self, filepath:Path) -> tuple:
         wb = load_workbook(filepath)
@@ -60,6 +62,7 @@ class XLSXFile():
     def format_add_row( self:Self, values:Sequence ):
         assert self.ws, "self.ws sould exist when we try to addrow()."
         self.ws.append( tuple(values) )
+        self.no_data = False # Keep track if any data has been written
 
     def format_get_row_values(self:Self, nrow:int) -> tuple:
         assert self.ws, "self.ws sould exist when we try to get row values."
@@ -70,6 +73,7 @@ class XLSXFile():
         assert self.ws, "self.ws sould exist when we try to writeheader()."
         for i in range(max_col):# 1-based indexing in Excel
             cell = self.ws.cell(row= nrow+1, column = i+1, value= values[i])
+        self.no_data = False # Keep track if any data has been written
                 
     def format_set_row_font(self:Self, nrow:int, font):
         assert self.ws, "self.ws sould exist when we try to writeheader()."

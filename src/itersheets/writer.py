@@ -69,6 +69,7 @@ class WriterBase(WriteOnlySpreadsheet):
                on_new_field:str
                ) -> None:
         self._saved = False
+        print("ADDING ROW")
         if not self.is_open:
             raise sheetError(f"Trying to write into {self.fp} after closing the file.")        
         if self.is_empty:
@@ -125,10 +126,13 @@ class WriterBase(WriteOnlySpreadsheet):
     def writeheader(self:Self) -> None:
         self._saved = False
         if self.is_empty: # Empty file, we need to add a row 
+            print("ADDING TO EMPTY FILE")
             self.format_add_row(self.fields)
         else: # Update existing header line
+            print("SETTING HEADER IN AN FILE")
             self.format_set_row_values(0, self.fields)
-        if self.BOLDFONT: self.format_set_row_font(0, self.BOLDFONT)
+        if self.BOLDFONT: 
+            self.format_set_row_font(0, self.BOLDFONT)
         # Do not save just for a header, wait for a data row
 
     def close(self, save:bool = True) -> None:
