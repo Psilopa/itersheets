@@ -11,13 +11,12 @@ As the name suggests, all row operations are done in one sweep row-by-row. No ra
 - Support CSV in-place line addition
 
 # Installation
-For now, you have to build your own Python package if you want to use this as a simple import. 
+At least for now, itersheets is not directly available from the standard Python Package Index (PyPI). You'll have to do an extra stem to use it.
 
-- Download source code 
-- ```pip install --upgrade setuptools[core]```
-- In the directory where the pyconfig.toml file is, run ```python -m build```
-- ```pip install dist/itersheets-0.4-py3-none-any.whl```  (or whatever is the name fo the .whl package file created by setuptools
-
+- Download source code and extract the ZIP package (or use git)
+- In the main directory (with pyproject.toml etc), run 
+- In the directory where the pyconfig.toml file is, run ```pip install .```
+ 
 # Basic usage
 
 ## Writing data
