@@ -2,7 +2,10 @@
 # STDlib
 from abc import ABC, abstractmethod
 from pathlib import Path
-import logging, json, itertools
+import logging
+import json
+import itertools
+#from pprint import pformat
 
 # My own modules
 from .mytyping import * # For type checking tools
@@ -141,22 +144,28 @@ class WriteOnlySpreadsheet(Spreadsheet):
         raise NotImplementedError
    
     def add_row_from_dict(self:Self,
-                           datarowdict: dict[str,object],
-                           on_new_key:str ) -> None:
+                          datarowdict: dict[str,object],
+                          on_new_key:str ) -> None:
         """Write a row based on a dictionary of column_header: value items.
 
         If the column_header is not included in the existing file structure, raise a ValueError."""
         self.addrow( json2printdict(datarowdict), on_new_key )
         
-    def add_row_from_json(self:Self, datarowdict: dict[str,object],
-                           on_new_key:str  ) -> None:
-        self.addrow( json2printdict(datarowdict), on_new_key )
+    def add_row_from_json(self:Self,
+                          jsonstring: str,
+                          on_new_key:str  ) -> None:
+        self.addrow( json2printdict(jsonstring), on_new_key )
 
     def move(self:Self, newpath, overwrite=False):
         if not self.exists: return # Nothing to do.
         if newpath.exists() and not overwrite:
             raise sheetError(f"Will not overwrite {newpath}")
         self.fp.replace(newpath)
+
+    # Shorter aliases for row access functions
+    dict2row = add_row_from_dict
+    
+        
 # -------------- READING ----------------
 class ReadOnlySpreadsheet(Spreadsheet):
     def __init__(self:Self, filename: str|Path, **kwargs:dict) :
